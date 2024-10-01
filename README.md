@@ -6,6 +6,7 @@ TLMatthies, Mcray3000, kevinrutledge, Aiden-Rodriguez
 Student names and emails:
 Timothy Matthies: tmatthie@calpoly.edu
 Aiden Rodriguez: arodr474@calpoly.edu
+Kevin Rutledge: krutledg@calpoly.edu
 
 Skills for Project:
 Efficiency
