@@ -17,7 +17,7 @@
 
 ## GitHub Repository
 
-[Smart Food Shop](https://github.com/TLMatthies/csc_365_group_project)
+[Smart Food App (Working Title)](https://github.com/TLMatthies/csc_365_group_project)
 
 ## Skills to Utilize
 
