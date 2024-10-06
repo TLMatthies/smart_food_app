@@ -39,4 +39,4 @@
 
 ## Pitch
 
-Facing rising food prices and tight budgets? **Smart Food Shop** is your solution! We help you keep your shopping costs low while maximizing the quantity and nutritional value of your groceries. By optimizing shopping locations and managing purchases intelligently, we make affordable and nutritious eating accessible, even in challenging economic times.
+Facing rising food prices and tight budgets? **Smart Food App** is your solution! We help you keep your shopping costs low while maximizing the quantity and nutritional value of your groceries. By optimizing shopping locations and managing purchases intelligently, we make affordable and nutritious eating accessible, even in challenging economic times.
