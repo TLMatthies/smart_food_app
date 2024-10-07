@@ -1,38 +1,42 @@
-# csc_365_group_projectGroup/Project Name ideas: Market Munchers, Protein Packers, The Crusty Cart, Smart Food Shop
+# Smart Food App (Working Title)
 
-Github names:
-TLMatthies, Mcray3000, kevinrutledge, Aiden-Rodriguez
+## Project Overview
 
-Student names and emails:
-Timothy Matthies: tmatthie@calpoly.edu
-Aiden Rodriguez: arodr474@calpoly.edu
-Kevin Rutledge: krutledg@calpoly.edu
-McCay Ruddick: mruddick@calpoly.edu
+**Smart Food App (Working Title)** aims to enhance shopping efficiency by optimizing costs, nutritional value, and convenience. Our solution helps users maintain a high quantity of food in their cart at affordable prices by strategically selecting shopping locations and managing resources effectively.
 
-Skills for Project:
-Efficiency
-Managing Money
+## Team Members
 
-Bare Minimums:
-Has to be cool (maybe unique?)
-Has to be something all of us would use.
-Resume worthy!
+- **Timothy Matthies**  
+  Email: [tmatthie@calpoly.edu](mailto:tmatthie@calpoly.edu)
+- **Aiden Rodriguez**  
+  Email: [arodr474@calpoly.edu](mailto:arodr474@calpoly.edu)
+- **Kevin Rutledge**  
+  Email: [krutledg@calpoly.edu](mailto:krutledg@calpoly.edu)
+- **McCay Ruddick**  
+  Email: [mruddick@calpoly.edu](mailto:mruddick@calpoly.edu)
 
-Ideas: bulleted list :)
+## GitHub Repository
 
-Shopping efficiency:
-(cost) (mass/$), (cal/$), (protein/$)
-Location, routes, distance from Cal Poly
-Free food resources/ drop off days/ locations
-Scheduling
-Customer info/id?? 
-Pitch
-  Are you poor? Do you want to eat food? 
-  Missing out on conversations because of your rumbling tummy?
-  Do you want to be the apple of your tummy's eye?
-  Good ones actually for the assignment
+[Smart Food App (Working Title)](https://github.com/TLMatthies/csc_365_group_project)
 
+## Skills to Utilize
 
+- **Efficiency**: Streamlining shopping processes to save time and resources.
+- **Money Management**: Optimizing spending to maximize nutritional value per dollar.
 
-Cart looking empty but prices keep going up? (x) is the solution! With (x) we aim to keep your shopping prices low but your amount of food in your cart high. We aim to keep your nutritional gain steady at a good price. By optimizing your shopping locations, food bought at those locations, etc, we can help you buy food at a more affordable price in the current age of inflation. 
+## Project Goals
 
+- **Uniqueness**: Develop a practical and unique solution.
+- **Usability**: Ensure the tool is beneficial for all team members.
+- **Resume Enhancement**: Create a project that showcases our skills effectively.
+
+## Features
+
+- **Cost Optimization**: Analyze cost per mass, calorie, and protein.
+- **Location Efficiency**: Optimize shopping routes and proximity to Cal Poly.
+- **Resource Management**: Identify free food resources and schedule drop-offs.
+- **Customer Management**: Handle customer information and identification.
+
+## Pitch
+
+Facing rising food prices and tight budgets? **Smart Food App** is your solution! We help you keep your shopping costs low while maximizing the quantity and nutritional value of your groceries. By optimizing shopping locations and managing purchases intelligently, we make affordable and nutritious eating accessible, even in challenging economic times.
