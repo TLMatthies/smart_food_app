@@ -6,7 +6,7 @@
 
 2. **As a health-conscious shopper**, I want to see the nutritional information of food items, **so that** I can maintain a balanced diet.
 
-3. **As a time-strapped husband**, I want to optimize my shopping route, **so that** I can save time on grocery trips.
+3. **As a time-strapped spouse**, I want to optimize my shopping route, **so that** I can save time on grocery trips.
 
 4. **As a new student at Cal Poly**, I want to discover nearby grocery stores, **so that** I can easily access food options.
 
