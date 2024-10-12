@@ -1,14 +1,12 @@
 # API Specification for Potion Exchange Compatible Shops
 
-## 1. Customer Purchasing
+## 1. Store Info
 
 The API calls are made in this sequence when making a purchase:
-1. `Get Catalog`
-2. `Customer Visits`
-3. `New Cart`
-4. `Add Item to Cart` (Can be called multiple times)
-5. `Checkout Cart`
-6. `Search Orders`
+1. `Get Stores`
+2. `Get Operating Hours`
+3. 'Get Location'
+4. `Get Catalog`
 
 ### 1.1. Get Catalog - `/catalog/` (GET)
 
@@ -144,11 +142,14 @@ The API returns a JSON object with the following structure:
     - `timestamp`: A string that represents the date and time when the line item was created. This is in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ).
 
 
-## 2. Bottling
+## 2. User Actions
 
 The API calls are made in this sequence when the bottler comes:
-1. `Get Bottle Plan`
-2. `Deliver Bottles`
+1. `Post User`
+2. `Post Prefrences`
+3. `Post Shopping List`
+4. `Add item (PUT)`
+5. `Delete item`
 
 ### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
 
