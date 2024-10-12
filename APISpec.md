@@ -4,7 +4,7 @@
 
 The API calls are made in this sequence when making a purchase:
 1. `Get Stores`
-4. `Get Catalog`
+2. `Get Catalog`
 
 ### 1.1. Get Stores - `/stores/` (GET)
 
@@ -40,6 +40,36 @@ Retrieves the list of items that the store has in its catalog, item_sku, name, p
     },
 ]
 ```
+
+## 2 User info
+1. `Post User`
+2. `Post Preferences`
+3. `Get Prefrence_Catalog`
+4. `Post Shopping List`
+5. `Add item (PUT)`
+6. `Delete item`
+7. `Get List History (Listory)`
+
+### 2.1. User - `/users/` (POST)
+Creates a new user, with id and name
+
+**Request**:
+```json
+[
+    {
+        "name": "string"
+    }
+]
+
+**Response**:
+```json
+[
+    {
+        "user_id": "int"
+    }
+]
+
+### 2.2 User preferences - `/users
 
 ### 1.3. Visits - `/carts/visits/{visit_id}` (POST)
 
@@ -167,6 +197,16 @@ The API calls are made in this sequence when the bottler comes:
 5. `Add item (PUT)`
 6. `Delete item`
 7. `Get List History (Listory)`
+
+### 2.1. Get Users
+- `/bottler/plan` (POST)
+### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
+### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
+### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
+### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
+### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
+### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
+
 
 ### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
 
