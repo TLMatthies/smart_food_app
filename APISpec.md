@@ -4,29 +4,44 @@
 
 The API calls are made in this sequence when making a purchase:
 1. `Get Stores`
-2. `Get Operating Hours`
-3. 'Get Location'
 4. `Get Catalog`
 
-### 1.1. Get Catalog - `/catalog/` (GET)
+### 1.1. Get Stores - `/stores/` (GET)
 
-Retrieves the catalog of items. Each unique item combination should have only a single price. You can have at most 6 potion SKUs offered in your catalog at one time.
+
+Retrieves the list of stores. Each store has a store ID, Name, hours, location
 
 **Response**:
 
 ```json
 [
     {
-        "sku": "string", /* Matching regex ^[a-zA-Z0-9_]{1,20}$ */
+        "store_id": "string", /* Matching regex ^[a-zA-Z0-9_]{1,20}$ */
         "name": "string",
-        "quantity": "integer", /* Between 1 and 10000 */
-        "price": "integer", /* Between 1 and 500 */
-        "potion_type": [r, g, b, d] /* r, g, b, d are integers that add up to exactly 100 */
+        "hours": "(open, close)", /* integer between 0 and 23 */
+        "location": "coordinates", /* latitude longitude */
     }
 ]
 ```
 
-### 1.2. Visits - `/carts/visits/{visit_id}` (POST)
+### 1.2. Get Catalog - `/stores/{store_id}/catalog` (GET)
+
+Retrieves the list of items that the store has in its catalog, item_sku, name, price, quantity
+
+**Response**:
+
+```json
+[
+    {
+        "item_sku": "string", /* Matching regex ^[a-zA-Z0-9_]{1,20}$ */
+        "name": "string",
+        "quantity": "integer",
+        "price": "integer", /* Between 1 and 10000 */
+    },
+]
+```
+
+### 1.3. Visits - `/carts/visits/{visit_id}` (POST)
 
 Shares the customers that visited the store on that tick. Not all
 customers end up purchasing because they may not like what they see
@@ -146,10 +161,12 @@ The API returns a JSON object with the following structure:
 
 The API calls are made in this sequence when the bottler comes:
 1. `Post User`
-2. `Post Prefrences`
-3. `Post Shopping List`
-4. `Add item (PUT)`
-5. `Delete item`
+2. `Post Preferences`
+3. `Get Prefrence_Catalog`
+4. `Post Shopping List`
+5. `Add item (PUT)`
+6. `Delete item`
+7. `Get List History (Listory)`
 
 ### 2.1. Get Bottle Plan - `/bottler/plan` (POST)
 
