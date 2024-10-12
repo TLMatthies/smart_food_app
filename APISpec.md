@@ -50,7 +50,7 @@ Retrieves the list of items that the store has in its catalog, item_sku, name, p
 6. `Delete item`
 7. `Get List History (Listory)`
 
-### 2.1. User - `/users/` (POST)
+### 2.1. Create new user - `/users/` (POST)
 Creates a new user, with id and name
 
 **Request**:
@@ -60,6 +60,7 @@ Creates a new user, with id and name
         "name": "string"
     }
 ]
+```
 
 **Response**:
 ```json
@@ -68,9 +69,30 @@ Creates a new user, with id and name
         "user_id": "int"
     }
 ]
+```
+### 2.2 Add user preferences - `/users/{user_id}/preferences` (POST)
+Adds user preference onto user account (only budget for now)
 
-### 2.2 User preferences - `/users
+**Request**:
+```json
+[
+    {
+        "budget": "int"
+    }
+]
+```
+### 2.3 Get user's preferences - `/users/{user_id}/prefernces` (GET)
+Get the user's preferences
 
+**Response**:
+```json
+[
+    {
+        "budget": "int"
+    }
+]
+
+##
 ### 1.3. Visits - `/carts/visits/{visit_id}` (POST)
 
 Shares the customers that visited the store on that tick. Not all
