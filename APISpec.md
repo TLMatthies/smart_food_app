@@ -91,8 +91,22 @@ Get the user's preferences
         "budget": "int"
     }
 ]
+```
 
-##
+### 2.4 Make a shopping list - `/users/{user_id}/lists` (POST)
+Make a new shopping list for customer
+
+**Response**:
+```json
+[
+    {
+        "list_id": "int"
+    }
+]
+```
+
+# Examples:
+
 ### 1.3. Visits - `/carts/visits/{visit_id}` (POST)
 
 Shares the customers that visited the store on that tick. Not all
