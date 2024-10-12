@@ -3,8 +3,11 @@ Joe comes to the smart food app looking to get a list of the items from a Trader
 First, Joe must create a user account, then checks a list of the stores, then gets the catalogue of Trader Joes. To do this he:
 
 starts by calling POST /users to create an account,
+
 then Joe calls GET /stores to get a list of the stores avaiable in the app, along with the store ids,
+
 finally, Joe calls GET /stores/{store_id}/catalogue, using the ID of Trader Joes,
+
 Joe now has a list of the catalogue items at Trader Joes
 
 
