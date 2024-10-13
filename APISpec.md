@@ -105,7 +105,30 @@ Make a new shopping list for customer
 ]
 ```
 
-# Examples:
+### 2.5 Add items to a list - `/users/{user_id}/lists/{list_id}` (PUT)
+Add items to specified list, and specified user
+
+**Request**:
+```json
+[
+    {
+        "sku": "string"
+        "quantity": "int"
+    },
+    {
+        ...
+    }
+]
+```
+
+### 2.6 Delete item from list - `/users/{user_id}/lists/{list_id}/{sku}` (DELETE)
+Remove a certain item from a certain list
+
+
+### 2.7 Get list history
+**Not Sure what to put here**
+
+# Other Examples:
 
 ### 1.3. Visits - `/carts/visits/{visit_id}` (POST)
 
