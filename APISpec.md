@@ -55,20 +55,20 @@ Creates a new user, with id and name
 
 **Request**:
 ```json
-[
+
     {
         "name": "string"
     }
-]
+
 ```
 
 **Response**:
 ```json
-[
+
     {
         "user_id": "int"
     }
-]
+
 ```
 ### 2.2 Add user preferences - `/users/{user_id}/preferences` (POST)
 Adds user preference onto user account (only budget for now)
