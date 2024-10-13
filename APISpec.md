@@ -96,13 +96,22 @@ Get the user's preferences
 ### 2.4 Make a shopping list - `/users/{user_id}/lists` (POST)
 Make a new shopping list for customer
 
+**Request**:
+```json
+
+{
+    "name": "string"
+}
+```
+
 **Response**:
 ```json
-[
-    {
-        "list_id": "int"
-    }
-]
+
+{
+    "list_id": "int"
+    "name": "string"
+}
+
 ```
 
 ### 2.5 Add items to a list - `/users/{user_id}/lists/{list_id}` (PUT)
@@ -125,8 +134,20 @@ Add items to specified list, and specified user
 Remove a certain item from a certain list
 
 
-### 2.7 Get list history
-**Not Sure what to put here**
+### 2.7 Get list history - `/users/{user_id}/lists` (GET)
+
+**Response**:
+```json
+[
+    {
+        "list_id": "int"
+        "name": "string"
+    },
+    {
+        ...
+    }
+]
+```
 
 # Other Examples:
 
