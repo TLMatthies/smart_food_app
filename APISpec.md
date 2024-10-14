@@ -1,4 +1,4 @@
-# API Specification for Potion Exchange Compatible Shops
+# API Specification for the Smart Food App
 
 ## 1. Store Info
 
