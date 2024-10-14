@@ -18,8 +18,8 @@ Retrieves the list of stores. Each store has a store ID, Name, hours, location
     {
         "store_id": "string", /* Matching regex ^[a-zA-Z0-9_]{1,20}$ */
         "name": "string",
-        "hours": "(open, close)", /* integer between 0 and 23 */
-        "location": "coordinates", /* latitude longitude */
+        "hours": "(open, close)", /*  24 hour integer clock (e.g., "09:00", "22:00")*/
+        "location": "coordinates", /* {"latitude": 37.7749, "longitude": -122.4194} */
     }
 ]
 ```
@@ -34,7 +34,6 @@ Retrieves the list of items that the store has in its catalog, item_sku, name, p
 [
     {
         "item_sku": "string", /* Matching regex ^[a-zA-Z0-9_]{1,20}$ */
-        "store_id": "string", /* Foreign key to store_id */
         "name": "string",
         "quantity": "integer",
         "price": "integer", /* Between 1 and 10000 */
@@ -115,7 +114,7 @@ Make a new shopping list for customer
 
 ```
 
-### 2.5 Add items to a list - `/users/{user_id}/lists/{list_id}` (PUT)
+### 2.5 Add items to a list - `/users/{user_id}/lists/{list_id}` (POST)
 Add items to specified list, and specified user
 
 **Request**:
