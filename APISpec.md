@@ -34,6 +34,7 @@ Retrieves the list of items that the store has in its catalog, item_sku, name, p
 [
     {
         "item_sku": "string", /* Matching regex ^[a-zA-Z0-9_]{1,20}$ */
+        "store_id": "string", /* Foreign key to store_id */
         "name": "string",
         "quantity": "integer",
         "price": "integer", /* Between 1 and 10000 */
