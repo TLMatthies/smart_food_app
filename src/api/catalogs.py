@@ -31,13 +31,18 @@ def get_store_catalog(store_id: int):
                 sqlalchemy.text(
                     """
                     SELECT 
-                        ci.catalog_item_id as item_sku,
-                        fi.name,
-                        ci.quantity,
-                        ci.price
-                    FROM catalog_items ci
-                    JOIN food_items fi ON ci.food_id = fi.food_id
-                    WHERE ci.store_id = :store_id
+                    store.name as name,
+                    catalog_item.price as price,
+                    food_item.name as item_sku,
+                    catalog_item.quantity as quantity
+
+
+                    FROM store
+
+                    JOIN catalog_item ON store.catalog_id = catalog_item.catalog_id
+                    JOIN food_item ON food_item.food_id = catalog_item.food_id
+
+                    WHERE store.store_id = :store_id
                     """
                 ),
                 {"store_id": store_id}

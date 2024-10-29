@@ -35,7 +35,7 @@ def get_stores():
                     """
                     SELECT store_id, name, latitude, longitude,
                            open_time, close_time
-                    FROM stores
+                    FROM store
                     """
                 )
             )
