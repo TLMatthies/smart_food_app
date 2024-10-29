@@ -28,7 +28,7 @@ def create_user(new_user: User):
             result = conn.execute(
                 sqlalchemy.text(
                     """
-                    INSERT INTO users (name, location)
+                    INSERT INTO "Users" (name, location)
                     VALUES (:name, :location)
                     RETURNING user_id
                     """
