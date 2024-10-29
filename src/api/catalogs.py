@@ -35,9 +35,10 @@ def get_store_catalog(store_id: int):
                         fi.name,
                         ci.quantity,
                         ci.price
-                    FROM catalog_items ci
-                    JOIN food_items fi ON ci.food_id = fi.food_id
-                    WHERE ci.store_id = :store_id
+                    FROM catalog_item ci
+                    JOIN catalog c ON ci.catalog_id = c.catalog_id
+                    JOIN food_item fi ON ci.food_id = fi.food_id
+                    WHERE c.store_id = :store_id
                     """
                 ),
                 {"store_id": store_id}
