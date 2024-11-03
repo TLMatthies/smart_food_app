@@ -77,26 +77,23 @@ def get_preferences(user_id: int):
     """
     Gets user preference (only budget for now)
     """
+    user_data = {"user_id": user_id}
+    get_pref = sqlalchemy.text("""
+            SELECT budget
+            FROM preference
+            WHERE user_id = :user_id
+            """)
 
-    try:
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
-                    SELECT budget
-                    FROM preference
-                    WHERE user_id = :user_id
-                    """
-                ),
-                {"user_id": user_id}
-            )
-            budget = result.scalar()
+    with db.engine.begin() as conn:
+            
+        try:
+            budget = conn.execute(get_pref, user_data).scalar()
             return budget
             
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.exception(f"Error getting preferences: {e}")
-        raise Exception("Failed to get preferences")
+        except Exception as e:
+            logger.exception(f"Error getting preferences: {e}")
+            raise Exception("Failed to get preferences")
+
 
 
 @router.post("/users/{user_id}/lists")

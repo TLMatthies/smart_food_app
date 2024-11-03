@@ -25,36 +25,33 @@ def get_store_catalog(store_id: int):
     Retrieves the catalog for a specific store.
     Returns a list of items with their SKUs, names, quantities, and prices.
     """
-    try:
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
-                    SELECT 
-                        ci.catalog_item_id as item_sku,
-                        fi.name,
-                        ci.quantity,
-                        ci.price
-                    FROM catalog_item ci
-                    JOIN catalog c ON ci.catalog_id = c.catalog_id
-                    JOIN food_item fi ON ci.food_id = fi.food_id
-                    WHERE c.store_id = :store_id
-                    """
-                ),
-                {"store_id": store_id}
-            )
+    
+    id_data = {"store_id": store_id}
+    fetch_catalog = sqlalchemy.text("""
+            SELECT catalog_item_id as item_sku, name, quantity, price
+            FROM catalog_item
+            JOIN catalog ON catalog_item.catalog_id = catalog.catalog_id
+            JOIN food_item fi ON catalog_item.food_id = food_item.food_id
+            WHERE catalog.store_id = :store_id
+                                    """)
+    
+    with db.engine.begin() as conn:
             
-            catalog = []
-            for row in result:
-                catalog.append({
-                    "item_sku": str(row.item_sku),
-                    "name": row.name,
-                    "quantity": row.quantity,
-                    "price": row.price
-                })
+        try:
+            db_catalog = conn.execute(fetch_catalog,id_data)
+        
+        except Exception as e:
+            logger.exception(f"Error fetching catalog: {e}")
+            raise Exception(f"Failed to fetch catalog for store {store_id}")  
+        
+        catalog = []
+        for item in db_catalog:
+            catalog.append({
+                "item_sku": str(item.item_sku),
+                "name": item.name,
+                "quantity": item.quantity,
+                "price": item.price
+            })
             
-            return catalog
+        return catalog
             
-    except Exception as e:
-        logger.exception(f"Error fetching catalog: {e}")
-        raise Exception(f"Failed to fetch catalog for store {store_id}")
