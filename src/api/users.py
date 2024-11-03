@@ -70,7 +70,7 @@ def add_preferences(user_id: int, budget: int):
             logger.exception(f"Error changing preferences: {e}")
             raise Exception("Failed to change preferences")
         
-        return "OK"
+    return "OK"
             
     
 @router.get("/users/{user_id}/preferences")
@@ -102,43 +102,21 @@ def create_list(user_id: int, name: str):
     """
     Make a new shopping list for customer
     """
-    try:
-        with db.engine.begin() as conn:
-            # Check if a list with the given user_id and name already exists
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
-                    SELECT list_id
-                    FROM shopping_list
-                    WHERE user_id = :user_id AND name = :name
-                    """
-                ),
-                {"user_id": user_id, "name": name}
-            )
-            list_id = result.scalar()
+    user_data = {"user_id": user_id, "name": name}
+    
+    with db.engine.begin() as conn:
+        try:
+            list_id = conn.execute(sqlalchemy.text("""
+                INSERT INTO shopping_list (name, user_id)
+                VALUES (:name, :user_id)
+                RETURNING list_id
+                """), user_data).scalar()
             
-            # If it exists, return the existing list_id
-            if list_id:
-                return {"name": name, "list_id": list_id}
-
-            # If it doesn't exist, insert a new list
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
-                    INSERT INTO shopping_list (name, user_id)
-                    VALUES (:name, :user_id)
-                    RETURNING list_id
-                    """
-                ),
-                {"user_id": user_id, "name": name}
-            )
-            list_id = result.scalar()
             return {"name": name, "list_id": list_id}
 
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.exception(f"Error creating list: {e}")
-        raise Exception("Failed to create list")
+        except Exception as e:
+            logger.exception(f"Error creating list: {e}")
+            raise Exception("Failed to create list")
 
 class item(BaseModel):
     food_id: int
