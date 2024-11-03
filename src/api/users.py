@@ -167,29 +167,25 @@ def get_list_history(user_id: int):
     """
     Get the history of added lists from a user
     """
-    try:
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
+    user_info = {"user_id": user_id}
+
+    with db.engine.begin() as conn:
+            
+        try:    
+            shopping_lists = conn.execute(sqlalchemy.text("""
                     SELECT list_id, name
                     FROM shopping_list
                     WHERE user_id = :user_id
                     """
-                ),
-                {"user_id": user_id}
-            )
-            rows = result.mappings().all()
-            # This is kinda funny
-            list_list = []
-            list_list = [
-                {"list_id": row['list_id'], "name": row['name']}
-                for row in rows
+                ), user_info).mappings().all()
+            
+            return_list = [
+                {"list_id": item['list_id'], "name": item['name']}
+                for item in shopping_lists
             ]
 
-            return list_list
+            return return_list
 
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.exception(f"Error getting history from user: {e}")
-        raise Exception("Failed to get history from user")
+        except Exception as e:
+            logger.exception(f"Error getting history from user: {e}")
+            raise Exception("Failed to get history from user")
