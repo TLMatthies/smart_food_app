@@ -51,26 +51,27 @@ def add_preferences(user_id: int, budget: int):
     """
 
     # Either adds preferences, or if already exists then change the budget value
-    try:
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
+    manage_preferences = sqlalchemy.text("""
                     INSERT INTO preference (user_id, budget)
                     VALUES (:user_id, :budget)
                     ON CONFLICT (user_id) DO UPDATE 
                     SET budget = :budget
-                    """
-                ),
-                {"user_id": user_id, "budget": budget}
-            )
+                                         """)
+    
+    preference_data = {"user_id": user_id, "budget": budget}
+    
+    
+    with db.engine.begin() as conn:
+        
+        try:
+            conn.execute(manage_preferences, preference_data)
+        
+        except Exception as e:
+            logger.exception(f"Error changing preferences: {e}")
+            raise Exception("Failed to change preferences")
+        
+        return "OK"
             
-            return "OK"
-            
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.exception(f"Error changing preferences: {e}")
-        raise Exception("Failed to change preferences")
     
 @router.get("/users/{user_id}/preferences")
 def get_preferences(user_id: int):
