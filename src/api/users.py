@@ -23,26 +23,21 @@ def create_user(new_user: User):
     Creates a new user in the system.
     Returns the user_id of the created user.
     """
-    try:
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
+    user_info = {"name": new_user.name, "location": new_user.location}
+    with db.engine.begin() as conn:
+        try:
+            user_id = conn.execute(sqlalchemy.text("""
                     INSERT INTO "Users" (name, location)
                     VALUES (:name, :location)
                     RETURNING user_id
                     """
-                ),
-                {"name": new_user.name, "location": new_user.location}
-            )
-            user_id = result.scalar_one()
+                ), user_info).scalar()
             
             return {"user_id": user_id}
             
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.exception(f"Error creating user: {e}")
-        raise Exception("Failed to create user")
+        except Exception as e:
+            logger.exception(f"Error creating user: {e}")
+            raise Exception("Failed to create user")
     
 @router.post("/users/{user_id}/preferences")
 def add_preferences(user_id: int, budget: int):
