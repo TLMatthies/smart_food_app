@@ -111,7 +111,7 @@ def create_list(user_id: int, name: str):
                 VALUES (:name, :user_id)
                 RETURNING list_id
                 """), user_data).scalar()
-            
+        
             return {"name": name, "list_id": list_id}
 
         except Exception as e:
@@ -127,25 +127,20 @@ def add_item_to_list(list_id: int, items: list[item]):
     """
     Add items to specified list, and specified user
     """
-    try:
-        item_dicts = [{"list_id": list_id, "food_id": item.food_id, "quantity": item.quantity} for item in items]
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
-                    INSERT INTO shopping_list_item (list_id, food_id, quantity)
-                    VALUES (:list_id, :food_id, :quantity)
-                    """
-                ),
-                item_dicts
-            )
+    item_dicts = [{"list_id": list_id, "food_id": item.food_id, "quantity": item.quantity} for item in items]
+    with db.engine.begin() as conn:
+        try:
+            conn.execute(sqlalchemy.text("""
+                INSERT INTO shopping_list_item (list_id, food_id, quantity)
+                VALUES (:list_id, :food_id, :quantity)
+                """
+            ), item_dicts)
             
             return "OK"
 
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.exception(f"Error adding to list: {e}")
-        raise Exception("Failed to add to list")
+        except Exception as e:
+            logger.exception(f"Error adding to list: {e}")
+            raise Exception("Failed to add to list")
     
 @router.delete("/users/{user_id}/lists/{list_id}}")
 def delete_item_from_list(list_id: int, food_id: int):
