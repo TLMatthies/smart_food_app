@@ -147,24 +147,20 @@ def delete_item_from_list(list_id: int, food_id: int):
     """
     Delete item from specified list, and specified user
     """
-    try:
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
+    user_data = {"list_id": list_id, "food_id": food_id}
+    
+    with db.engine.begin() as conn:
+        try:
+            conn.execute(sqlalchemy.text("""
                     DELETE FROM shopping_list_item
                     WHERE list_id = :list_id AND food_id = :food_id
                     """
-                ),
-                {"list_id": list_id, "food_id": food_id}
-            )
-            
+                ), user_data)
             return "OK"
-
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.exception(f"Error deleting from list: {e}")
-        raise Exception("Failed to delete from list")
+        
+        except Exception as e:
+            logger.exception(f"Error deleting from list: {e}")
+            raise Exception("Failed to delete from list")
     
 @router.get("/users/{user_id}/lists/}")
 def get_list_history(user_id: int):
