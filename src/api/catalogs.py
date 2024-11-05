@@ -28,11 +28,11 @@ def get_store_catalog(store_id: int):
     
     id_data = {"store_id": store_id}
     fetch_catalog = sqlalchemy.text("""
-            SELECT catalog_item_id as item_sku, name, quantity, price
-            FROM catalog_item
-            JOIN catalog ON catalog_item.catalog_id = catalog.catalog_id
-            JOIN food_item fi ON catalog_item.food_id = food_item.food_id
-            WHERE catalog.store_id = :store_id
+            SELECT ci.catalog_item_id AS item_sku, fi.name, ci.quantity, ci.price
+            FROM catalog_item ci
+            JOIN catalog c ON ci.catalog_id = c.catalog_id
+            JOIN food_item fi ON ci.food_id = fi.food_id
+            WHERE c.store_id = :store_id
                                     """)
     
     with db.engine.begin() as conn:
