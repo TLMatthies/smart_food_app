@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 import sqlalchemy
 import logging
@@ -19,7 +19,7 @@ class CatalogItem(BaseModel):
     quantity: int
     price: int
 
-@router.get("/{store_id}/catalog")
+@router.get("/{store_id}/catalogs")
 def get_store_catalog(store_id: int):
     """
     Retrieves the catalog for a specific store.
@@ -42,7 +42,10 @@ def get_store_catalog(store_id: int):
         
         except Exception as e:
             logger.exception(f"Error fetching catalog: {e}")
-            raise Exception(f"Failed to fetch catalog for store {store_id}")  
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while fetching the catalog"
+            )
         
         catalog = []
         for item in db_catalog:
@@ -52,6 +55,11 @@ def get_store_catalog(store_id: int):
                 "quantity": item.quantity,
                 "price": item.price
             })
-            
+
+        if catalog == []:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch catalog for store"
+            )
         return catalog
             
