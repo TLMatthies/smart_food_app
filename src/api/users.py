@@ -31,7 +31,7 @@ def create_user(new_user: User):
                     VALUES (:name, :location)
                     RETURNING user_id
                     """
-                ), user_info).scalar()
+                ), user_info).scalar_one()
             
             return {"user_id": user_id}
             
@@ -93,15 +93,15 @@ def get_preferences(user_id: int):
     """)
 
     with db.engine.begin() as conn:
-        user_exists = conn.execute(check_user_query, user_data).scalar()
-
-        if not user_exists:
+        try:
+            user_exists = conn.execute(check_user_query, user_data).scalar_one()
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User does not exist or preferences have not been set"
             )
         try:
-            budget = conn.execute(get_pref, user_data).scalar()
+            budget = conn.execute(get_pref, user_data).scalar_one()
             return "Budget " + str(budget)
             
         except Exception as e:
@@ -123,9 +123,9 @@ def create_list(user_id: int, name: str):
         SELECT 1 FROM preference WHERE user_id = :user_id
     """)
     with db.engine.begin() as conn:
-        user_exists = conn.execute(check_user_query, user_data).scalar()
-
-        if not user_exists:
+        try:
+            user_exists = conn.execute(check_user_query, user_data).scalar_one()
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User does not exist"
@@ -135,7 +135,7 @@ def create_list(user_id: int, name: str):
                 INSERT INTO shopping_list (name, user_id)
                 VALUES (:name, :user_id)
                 RETURNING list_id
-                """), user_data).scalar()
+                """), user_data).scalar_one()
         
             return {"name": name, "list_id": list_id}
 
@@ -167,9 +167,9 @@ def add_item_to_list(list_id: int, user_id: int, items: list[item]):
             )
     item_dicts = [{"list_id": list_id, "user_id": user_id, "food_id": item.food_id, "quantity": item.quantity} for item in items]
     with db.engine.begin() as conn:
-        user_exists = conn.execute(check_user_query, user_data).scalar()
-
-        if not user_exists:
+        try:
+            user_exists = conn.execute(check_user_query, user_data).scalar_one()
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User does not exist"
@@ -217,9 +217,9 @@ def delete_item_from_list(list_id: int, food_id: int):
     """)
 
     with db.engine.begin() as conn:
-        check_exists = conn.execute(check_query, user_data).scalar()
-
-        if not check_exists:
+        try:
+            check_exists = conn.execute(check_query, user_data).scalar_one()
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="List id or food id is invalid/does not exist"
@@ -250,13 +250,13 @@ def get_list_history(user_id: int):
         SELECT 1 FROM users WHERE user_id = :user_id
     """)
     with db.engine.begin() as conn:
-        user_exists = conn.execute(check_user_query, user_info).scalar()
-
-        if not user_exists:
+        try:
+            user_exists = conn.execute(check_user_query, user_info).scalar_one()
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User does not exist"
-            )     
+            )   
         try:    
             shopping_lists = conn.execute(sqlalchemy.text("""
                     SELECT list_id, name
