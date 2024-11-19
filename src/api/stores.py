@@ -63,7 +63,7 @@ def get_stores():
             )
     
 
-@router.get("/stores/{store_id}/catalog")
+@router.get("/{store_id}/catalog")
 def get_catalog(store_id: int):
     """
     Retrieves the list of items that the store has in its catalog, item_sku, name, price, quantity
