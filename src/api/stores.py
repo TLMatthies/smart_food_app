@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 import sqlalchemy
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 import logging
 from src import database as db
 from src.api import auth
@@ -141,16 +142,19 @@ def compare_prices(request: PricesRequest):
     try:
         with db.engine.begin() as conn:
             result = conn.execute(sqlalchemy.text(query), query_params)
-    except sqlalchemy.exc.IntegrityError as e:
-        return e
 
-    result = result.fetchall()
+        result = result.fetchall()
 
-    if len(result) < 1:
+        if len(result) <= 0:
+            raise NoResultFound
+
+    except NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No matching results"
         )
+    except IntegrityError as e:
+        return e
 
     return_object = []
     place = 1
