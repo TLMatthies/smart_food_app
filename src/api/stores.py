@@ -1,5 +1,6 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import sqlalchemy
 import logging
 from src import database as db
@@ -103,3 +104,60 @@ def get_catalog(store_id: int):
                 detail="Store ID not found in database"
             )
         return catalog
+
+
+class PricesRequest(BaseModel):
+    food_id: int = Field(ge=0)
+    max_price: Optional[int] = Field(default=0, ge=0)
+    max_stores: Optional[int] = Field(default=3, ge=1)
+
+@router.post("/compare-prices")
+def compare_prices(request: PricesRequest):
+    """
+    Find the stores with the best prices"""
+    try:
+        query = """
+        SELECT store.store_id AS id, store.name AS name, price
+        FROM store
+        JOIN catalog ON catalog.store_id = store.store_id
+        JOIN catalog_item ON catalog_item.catalog_id = catalog.catalog_id
+        WHERE catalog_item.food_id = :food_id
+        """
+        if request.max_price > 0:
+            query += "AND catalog_item.price <= :max_price"
+
+        query += """
+        ORDER BY price ASC
+        LIMIT :max_stores
+        """
+        
+        query_params = [{
+            "food_id": request.food_id,
+            "max_price": request.max_price,
+            "max_stores": request.max_stores
+        }]
+
+        with db.engine.begin() as conn:
+            result = conn.execute(sqlalchemy.text(query), query_params)
+
+        result = result.fetchall()
+
+        if len(result) < 1:
+            return "No results found"
+
+        return_object = []
+        place = 1
+        for line in result:
+            return_object.append({
+                "store_id": line.id,
+                "store_name": line.name,
+                "price": line.price,
+                "rank": place
+            })
+            place += 1
+
+        return return_object
+
+    except Exception as e:
+        logger.exception(f"Error fetching stores: {e}")
+        raise Exception("Failed to fetch stores")
