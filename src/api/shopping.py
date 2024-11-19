@@ -128,7 +128,7 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
             "Closest Store": {
                 "Name": closest_store["name"],
                 "Store ID": closest_store["store_id"],
-                "Distance Away": f"{closest_store['distance']:.2f} km",
+                "Distance Away": f"{closest_store['distance']:.2f}",
                 "Price of Item": f"${closest_store['price'] / 100:.2f}"
             }
         }
