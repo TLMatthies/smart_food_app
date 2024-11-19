@@ -26,6 +26,16 @@ def create_user(new_user: User):
     Creates a new user in the system.
     Returns the user_id of the created user.
     """
+    if new_user.longitude > 180 or new_user.longitude < -180:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Longitude must be between 180 and -180"
+        )
+    if new_user.latitude > 90 or new_user.latitude < -90:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Latitude must be between 90 and -90"
+        )
     user_info = {"name": new_user.name, "location": new_user.location,
                  "long": new_user.longitude, "lat": new_user.latitude}
     try:

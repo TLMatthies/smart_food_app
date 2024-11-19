@@ -5,6 +5,7 @@ import logging
 from src import database as db
 from src.api import auth
 import math
+from geopy.distance import geodesic
 
 logger = logging.getLogger(__name__)
 
@@ -101,15 +102,17 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
     user_long = user_info[0]
     user_lat = user_info[1]
     user_budget = user_info[2] if use_preferences else None
+    user_location = (user_lat, user_long)
 
     for row in result:
+        store_location = (row[1], row[0])
         store = {
             "longitude": row[0],
             "latitude": row[1],
             "name": row[2],
             "store_id": row[3],
             "price": row[4],
-            "distance": math.sqrt((user_long - row[0])**2 + (user_lat - row[1])**2)
+            "distance": geodesic(user_location, store_location).km
         }
         valid_stores.append(store)
         print(store)
@@ -128,7 +131,7 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
             "Closest Store": {
                 "Name": closest_store["name"],
                 "Store ID": closest_store["store_id"],
-                "Distance Away": f"{closest_store['distance']:.2f}",
+                "Distance Away": f"{closest_store['distance']:.2f} km",
                 "Price of Item": f"${closest_store['price'] / 100:.2f}"
             }
         }
@@ -153,13 +156,13 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
             "Closest Store": {
                 "Name": closest_store["name"],
                 "Store ID": closest_store["store_id"],
-                "Distance Away": f"{closest_store['distance']:.2f}",
+                "Distance Away": f"{closest_store['distance']:.2f} km",
                 "Price of Item": f"${closest_store['price']/100:,.2f}"
             },
             "Best Value Store": {
                 "Name": best_value_store["name"],
                 "Store ID": best_value_store["store_id"],
-                "Distance Away": f"{best_value_store['distance']:.2f}",
+                "Distance Away": f"{best_value_store['distance']:.2f} km",
                 "Price of Item": f"${best_value_store['price']/100:,.2f}"
             }
         }
