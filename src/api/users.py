@@ -45,7 +45,8 @@ def create_user(new_user: User):
 @router.post("/users/{user_id}/preferences", status_code=status.HTTP_201_CREATED)
 def add_preferences(user_id: int, budget: int):
     """
-    Adds user preference onto user account (only budget for now)
+    Adds user preference onto user account (only budget for now). Budget is stored as 100 x value to avoid decimal problems.
+    For example if you wanted to enter a budget of $9.99, enter 999.
     """
     if budget <= 0:
         raise HTTPException(
