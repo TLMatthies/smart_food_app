@@ -1,5 +1,6 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import sqlalchemy
 import logging
 from src import database as db
@@ -14,35 +15,36 @@ router = APIRouter(
 )
 
 class User(BaseModel):
-    name: str
-    location: str | None = None
+    name: str = Field(..., min_length=1)
+    location: Optional[str] = Field(default="Calpoly SLO")  # Default "Calpoly SLO"
+    longitude: Optional[float] = Field(default=120.6625)  # Default longitude
+    latitude: Optional[float] = Field(default=35.3050)    # Default latitude
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def create_user(new_user: User):
     """
     Creates a new user in the system.
     Returns the user_id of the created user.
     """
-    user_info = {"name": new_user.name, "location": new_user.location}
-    with db.engine.begin() as conn:
-        try:
+    user_info = {"name": new_user.name, "location": new_user.location,
+                 "long": new_user.longitude, "lat": new_user.latitude}
+    try:
+        with db.engine.begin() as conn:
             user_id = conn.execute(sqlalchemy.text("""
-                    INSERT INTO users (name, location)
-                    VALUES (:name, :location)
+                    INSERT INTO users (name, location, longitude, latitude)
+                    VALUES (:name, :location, :long, :lat)
                     RETURNING user_id
                     """
                 ), user_info).scalar_one()
             
             return {"user_id": user_id}
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="Failed to create user.")
             
-        except Exception as e:
-            logger.exception(f"Error creating user: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create user"
-            )
     
-@router.post("/users/{user_id}/preferences", status_code=status.HTTP_201_CREATED)
+@router.post("/{user_id}/preferences", status_code=status.HTTP_201_CREATED)
 def add_preferences(user_id: int, budget: int):
     """
     Adds user preference onto user account (only budget for now). Budget is stored as 100 x value to avoid decimal problems.
@@ -78,7 +80,7 @@ def add_preferences(user_id: int, budget: int):
     return {"message": "Preference successfully updated"}
             
     
-@router.get("/users/{user_id}/preferences")
+@router.get("/{user_id}/preferences")
 def get_preferences(user_id: int):
     """
     Gets user preference (only budget for now)
@@ -114,7 +116,7 @@ def get_preferences(user_id: int):
 
 
 
-@router.post("/users/{user_id}/lists", status_code=status.HTTP_201_CREATED)
+@router.post("/{user_id}/lists", status_code=status.HTTP_201_CREATED)
 def create_list(user_id: int, name: str):
     """
     Make a new shopping list for customer
@@ -151,7 +153,7 @@ class item(BaseModel):
     food_id: int
     quantity: int
 
-@router.post("/users/{user_id}/lists/{list_id}", status_code=status.HTTP_201_CREATED)
+@router.post("/{user_id}/lists/{list_id}", status_code=status.HTTP_201_CREATED)
 def add_item_to_list(list_id: int, user_id: int, items: list[item]):
     """
     Add items to specified list, and specified user
@@ -207,7 +209,7 @@ def add_item_to_list(list_id: int, user_id: int, items: list[item]):
                 detail="Failed to add to list"
             )
     
-@router.delete("/users/{user_id}/lists/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}/lists/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item_from_list(list_id: int, food_id: int):
     """
     Delete item from specified list, and specified user
@@ -241,7 +243,7 @@ def delete_item_from_list(list_id: int, food_id: int):
                 detail="Failed to delete from list"
             )
     
-@router.get("/users/{user_id}/lists/", status_code=status.HTTP_200_OK)
+@router.get("/{user_id}/lists/", status_code=status.HTTP_200_OK)
 def get_list_history(user_id: int):
     """
     Get the history of added lists from a user
