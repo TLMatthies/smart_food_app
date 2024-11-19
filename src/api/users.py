@@ -42,7 +42,7 @@ def create_user(new_user: User):
                 detail="Failed to create user"
             )
     
-@router.post("/users/{user_id}/preferences", status_code=status.HTTP_201_CREATED)
+@router.post("/{user_id}/preferences", status_code=status.HTTP_201_CREATED)
 def add_preferences(user_id: int, budget: int):
     """
     Adds user preference onto user account (only budget for now)
@@ -77,7 +77,7 @@ def add_preferences(user_id: int, budget: int):
     return {"message": "Preference successfully updated"}
             
     
-@router.get("/users/{user_id}/preferences")
+@router.get("/{user_id}/preferences")
 def get_preferences(user_id: int):
     """
     Gets user preference (only budget for now)
@@ -113,7 +113,7 @@ def get_preferences(user_id: int):
 
 
 
-@router.post("/users/{user_id}/lists", status_code=status.HTTP_201_CREATED)
+@router.post("/{user_id}/lists", status_code=status.HTTP_201_CREATED)
 def create_list(user_id: int, name: str):
     """
     Make a new shopping list for customer
@@ -150,7 +150,7 @@ class item(BaseModel):
     food_id: int
     quantity: int
 
-@router.post("/users/{user_id}/lists/{list_id}", status_code=status.HTTP_201_CREATED)
+@router.post("/{user_id}/lists/{list_id}", status_code=status.HTTP_201_CREATED)
 def add_item_to_list(list_id: int, user_id: int, items: list[item]):
     """
     Add items to specified list, and specified user
@@ -206,7 +206,7 @@ def add_item_to_list(list_id: int, user_id: int, items: list[item]):
                 detail="Failed to add to list"
             )
     
-@router.delete("/users/{user_id}/lists/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}/lists/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item_from_list(list_id: int, food_id: int):
     """
     Delete item from specified list, and specified user
@@ -240,7 +240,7 @@ def delete_item_from_list(list_id: int, food_id: int):
                 detail="Failed to delete from list"
             )
     
-@router.get("/users/{user_id}/lists/", status_code=status.HTTP_200_OK)
+@router.get("/{user_id}/lists/", status_code=status.HTTP_200_OK)
 def get_list_history(user_id: int):
     """
     Get the history of added lists from a user
