@@ -140,8 +140,9 @@ def compare_prices(request: PricesRequest):
     }]
 
     try:
-        with db.engine.begin() as conn:
-            result = conn.execute(sqlalchemy.text(query), query_params)
+        with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
+            with conn.begin():
+                result = conn.execute(sqlalchemy.text(query), query_params)
 
         result = result.fetchall()
 
