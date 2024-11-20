@@ -72,31 +72,32 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
     food_data = {"food_id": food_id}
     user_data = {"user_id": user_id}
     
-    with db.engine.begin() as conn:
-        try:
-            food_exists = conn.execute(check_food_query, food_data).scalar_one()
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Food item does not exist"
-            )
-        
-        try:
-            user_info = conn.execute(get_user_info_query, user_data).one()
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User does not exist"
-            )
+    with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
+        with conn.begin():
+            try:
+                food_exists = conn.execute(check_food_query, food_data).scalar_one()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Food item does not exist"
+                )
+            
+            try:
+                user_info = conn.execute(get_user_info_query, user_data).one()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist"
+                )
 
-        # If using preferences, check if preferences exist
-        if use_preferences and user_info[2] is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User preferences not set"
-            )
-        
-        result = conn.execute(find_matching_store_ids_query, food_data)
+            # If using preferences, check if preferences exist
+            if use_preferences and user_info[2] is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User preferences not set"
+                )
+            
+            result = conn.execute(find_matching_store_ids_query, food_data)
 
     valid_stores = []
     user_long = user_info[0]
