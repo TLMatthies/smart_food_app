@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import sqlalchemy
+from sqlalchemy.exc import NoResultFound
 import logging
 from src import database as db
 from src.api import auth
@@ -15,50 +16,43 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-class UserLocation(BaseModel):
-    latitude: float
-    longitude: float
+# Why is this here??
+# 
+# class UserLocation(BaseModel):
+#     latitude: float = Field(..., ge=-90, le=90, description="Latitude of the user's location.")
+#     longitude: float = Field(..., ge=-180, le=180, description="Longitude of the user's location.")
 
-class StoreLocation(BaseModel):
-    latitude: float
-    longitude: float
+# class StoreLocation(BaseModel):
+#     latitude: float = Field(..., ge=-90, le=90, description="Latitude of the stores's location.")
+#     longitude: float = Field(..., ge=-180, le=180, description="Longitude of the stores's location.")
 
-class Store(BaseModel):
-    store_id: str
-    name: str
-    hours: tuple[str, str]  # (open_time, close_time)
-    location: StoreLocation
+# class Store(BaseModel):
+#     store_id: int
+#     name: str
+#     hours: tuple[str, str]  # (open_time, close_time)
+#     location: StoreLocation
 
 @router.post("/route-optimize", status_code=status.HTTP_200_OK)
 def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
     """
-    Finds nearby stores with given food_id. If use_preferences is toggled to True, then a user's budget will be accounted when a store is selected. Otherwise, the closest store to the user with the valid food item is selected.
+    Finds nearby stores with given food_id. 
+    If use_preferences is toggled to True, 
+    then a user's budget will be accounted
+    when a store is selected. 
+    Otherwise, the closest store to the user with
+    the valid food item is selected.
     """
 
-    check_food_query = sqlalchemy.text("""
-        SELECT 1 FROM food_item WHERE food_id = :food_id
+    get_user_info_query = sqlalchemy.text("""
+        SELECT longitude, latitude, budget
+        FROM users
+        LEFT JOIN preference ON users.user_id = preference.user_id                    
+        WHERE users.user_id = :user_id
     """)
 
-    if use_preferences:
-        get_user_info_query = sqlalchemy.text("""
-            SELECT users.longitude, users.latitude, preference.budget
-            FROM users
-            LEFT JOIN preference ON users.user_id = preference.user_id                    
-            WHERE users.user_id = :user_id
-        """)
-    else:
-        get_user_info_query = sqlalchemy.text("""
-            SELECT longitude, latitude
-            FROM users                 
-            WHERE users.user_id = :user_id
-        """)
-
     find_matching_store_ids_query = sqlalchemy.text("""
-        SELECT
-        longitude,
-        latitude,
-        store.name as store_name,
-        store.store_id as store_id,
+        SELECT longitude, latitude,
+        store.name as store_name, store.store_id as store_id,
         catalog_item.price as price
 
         FROM store
@@ -70,53 +64,44 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
     """)
 
     food_data = {"food_id": food_id}
-    user_data = {"user_id": user_id}
     
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
-            try:
-                food_exists = conn.execute(check_food_query, food_data).scalar_one()
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Food item does not exist"
-                )
             
             try:
-                user_info = conn.execute(get_user_info_query, user_data).one()
-            except Exception as e:
+                user_info = conn.execute(get_user_info_query, {"user_id": user_id}).one()
+            except NoResultFound as e:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User does not exist"
+                    detail=f"User does not exist, {e}"
                 )
 
             # If using preferences, check if preferences exist
-            if use_preferences and user_info[2] is None:
+            if use_preferences and user_info.budget is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="User preferences not set"
                 )
-            
-            result = conn.execute(find_matching_store_ids_query, food_data)
+                
+            try:
+                result = conn.execute(find_matching_store_ids_query, food_data)
+            except NoResultFound as e:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Food item does not exist, {e}"
+                )
 
-    valid_stores = []
-    user_long = user_info[0]
-    user_lat = user_info[1]
-    user_budget = user_info[2] if use_preferences else None
-    user_location = (user_lat, user_long)
-
-    for row in result:
-        store_location = (row[1], row[0])
-        store = {
-            "longitude": row[0],
-            "latitude": row[1],
-            "name": row[2],
-            "store_id": row[3],
-            "price": row[4],
-            "distance": geodesic(user_location, store_location).km
-        }
-        valid_stores.append(store)
-        print(store)
+            valid_stores = [
+                {
+                    "longitude": row.longitude,
+                    "latitude": row.latitude,
+                    "name": row.store_name,
+                    "store_id": row.store_id,
+                    "price": row.price,
+                    "distance": geodesic((user_info.latitude, user_info.longitude), (row.latitude, row.longitude)).km
+                }
+                for row in result
+            ]
 
     if not valid_stores:
         raise HTTPException(
@@ -138,7 +123,7 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
         }
     else:
         # Filter stores by budget
-        valid_stores = [store for store in valid_stores if store["price"] <= user_budget]
+        valid_stores = [store for store in valid_stores if store["price"] <= user_info.budget]
         
         if not valid_stores:
             raise HTTPException(
