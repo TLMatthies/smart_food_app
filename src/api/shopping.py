@@ -213,7 +213,7 @@ def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
 
 
 @router.post("{user_id}/find_snack/{food_id}", status_code=status.HTTP_200_OK)
-def find_store(user_id: int, food_id: int, params: fugality_index):
+def find_snack(user_id: int, food_id: int, params: fugality_index):
     """
     Finds closest store with given food_id. 
     """
