@@ -152,6 +152,12 @@ def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
     currently there is a user input max price per budget
     """
     
+    orderByOptions = {
+        1 : "price, distance",
+        2 : "price",
+        3 : "distance"
+    }
+    
     find_items = sqlalchemy.text("""
         WITH they_got_it AS (
             SELECT 
