@@ -1,7 +1,7 @@
 from xmlrpc.client import MAXINT
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
-from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Query
+from pydantic import BaseModel, Field, validator
+from typing import Optional, Dict
 import sqlalchemy
 from sqlalchemy.exc import NoResultFound
 import logging
@@ -146,19 +146,29 @@ class fugality_index(BaseModel):
 
 
 @router.post("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
-def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
+def fulfill_list(user_id: int, list_id: int,
+                 willing_to_spend: fugality_index,
+                 order_by: int = Query(1, description="Order by option: 1=price,distance; 2=price; 3=distance")):
     """
     Generate a list of the closest_stores to fufil a list
     currently there is a user input max price per budget
     """
     
-    orderByOptions = {
+    options = {
         1 : "price, distance",
         2 : "price",
         3 : "distance"
     }
     
-    find_items = sqlalchemy.text("""
+    try:
+        option = options[order_by]  # Access the dictionary with the user-provided 'order_by'
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,  # 400 Bad Request
+            detail="Invalid order_by option"  # Informative error message
+        )
+    
+    find_items = sqlalchemy.text(f"""
         WITH they_got_it AS (
             SELECT 
                 food_item.name AS item,
@@ -180,11 +190,11 @@ def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
                 WHERE list_id = :list_id
                 )
                 AND price < :budget
-            ORDER BY item, price
+            ORDER BY item, {option}
         ),
         ranked_stores AS (
             SELECT  item, store_name, store_id, price, distance, 
-                    RANK() OVER (PARTITION BY item ORDER BY price) AS ranks
+                    RANK() OVER (PARTITION BY item ORDER BY {option}) AS ranks
             FROM they_got_it
         )
         SELECT item, store_name, store_id, price, distance, ranks
