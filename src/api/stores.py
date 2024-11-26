@@ -116,7 +116,8 @@ class PricesRequest(BaseModel):
 @router.post("/compare-prices")
 def compare_prices(request: PricesRequest):
     """
-    Find the stores with the best prices"""
+    Find the stores with the best prices
+    """
 
     query = """
     SELECT store.store_id AS id, store.name AS name, price

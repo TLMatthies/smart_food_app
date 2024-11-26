@@ -1,5 +1,7 @@
+from xmlrpc.client import MAXINT
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from typing import Optional
 import sqlalchemy
 from sqlalchemy.exc import NoResultFound
 import logging
@@ -16,23 +18,8 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-# Why is this here??
-# 
-# class UserLocation(BaseModel):
-#     latitude: float = Field(..., ge=-90, le=90, description="Latitude of the user's location.")
-#     longitude: float = Field(..., ge=-180, le=180, description="Longitude of the user's location.")
 
-# class StoreLocation(BaseModel):
-#     latitude: float = Field(..., ge=-90, le=90, description="Latitude of the stores's location.")
-#     longitude: float = Field(..., ge=-180, le=180, description="Longitude of the stores's location.")
-
-# class Store(BaseModel):
-#     store_id: int
-#     name: str
-#     hours: tuple[str, str]  # (open_time, close_time)
-#     location: StoreLocation
-
-@router.post("/route-optimize", status_code=status.HTTP_200_OK)
+@router.post("/route_optimize", status_code=status.HTTP_200_OK)
 def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
     """
     Finds nearby stores with given food_id. 
@@ -93,8 +80,6 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
 
             valid_stores = [
                 {
-                    "longitude": row.longitude,
-                    "latitude": row.latitude,
                     "name": row.store_name,
                     "store_id": row.store_id,
                     "price": row.price,
@@ -152,3 +137,120 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
                 "Price of Item": f"${best_value_store['price']/100:,.2f}"
             }
         }
+
+
+class fugality_index(BaseModel):
+    budget: Optional[int] = Field(default=MAXINT,
+                                  ge=0,
+                                  description="Budget in cents")
+
+@router.post("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
+def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
+    """
+    Generate a list of the closest_stores to fufil a list
+    currently there is a user input max price per budget
+    """
+    
+    get_shopping_list = sqlalchemy.text("""
+        SELECT food_id
+        FROM shopping_list_item
+        WHERE list_id = :list_id AND user_id = :user_id
+    """)
+    
+    with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
+        with conn.begin():
+            try:
+                shopping_list = conn.execute(get_shopping_list, 
+                                             {"user_id": user_id,
+                                              "list_id": list_id})
+            except NoResultFound as e:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"User or List does not exist, {e}"
+                )
+    
+    return_list = []
+    for item in shopping_list:
+        store = find_store(user_id, item.food_id, willing_to_spend)
+        if store not in return_list:
+            return_list.append(store)
+    return return_list
+
+
+@router.post("{user_id}/find_snack/{food_id}", status_code=status.HTTP_200_OK)
+def find_store(user_id: int, food_id: int, params: fugality_index):
+    """
+    Finds closest store with given food_id. 
+    """
+    budget = params.budget
+
+    get_user_info_query = sqlalchemy.text(
+        """
+        SELECT longitude, latitude
+        FROM users
+        WHERE users.user_id = :user_id
+        """
+    )
+
+    find_matching_store_ids_query = sqlalchemy.text(
+        """
+        SELECT longitude, latitude, food_item.name,
+        store.name as store_name, store.store_id as store_id,
+        catalog_item.price as price
+
+        FROM store
+
+        JOIN catalog ON catalog.store_id = store.store_id
+        JOIN catalog_item ON catalog.catalog_id = catalog_item.catalog_id
+        JOIN food_item ON food_item.food_id = catalog_item.food_id
+        WHERE food_item.food_id = :food_id
+    """)
+
+    food_data = {"food_id": food_id}
+    
+    with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
+        with conn.begin():
+            
+            try:
+                user_info = conn.execute(get_user_info_query, {"user_id": user_id}).one()
+            except NoResultFound as e:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"User does not exist, {e}"
+                )
+                
+            try:
+                result = conn.execute(find_matching_store_ids_query, food_data)
+            except NoResultFound as e:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"food_id: {food_id} does not exist, {e}"
+                )
+
+            valid_stores = [
+                {
+                    "name": row.store_name,
+                    "store_id": row.store_id,
+                    "item_name" : row.name,
+                    "price": row.price,
+                    "distance": geodesic((user_info.latitude, user_info.longitude), (row.latitude, row.longitude)).km
+                }
+                for row in result if row.price <= budget
+            ]
+
+    if not valid_stores:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No stores found with the requested item, food_id {food_id} and budget {budget}"
+        )
+
+    # Sort by distance and get closest store
+    valid_stores.sort(key=lambda store: store["distance"])
+    closest_store = valid_stores[0]
+    return {
+        "Name": closest_store["name"],
+        "Store ID": closest_store["store_id"],
+        "Distance Away": f"{closest_store['distance']:.2f} km",
+        "Item": closest_store["item_name"],
+        "Price of Item": f"${closest_store['price'] / 100:.2f}"
+    }
