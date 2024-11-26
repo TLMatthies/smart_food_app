@@ -144,6 +144,7 @@ class fugality_index(BaseModel):
                                   ge=0,
                                   description="Budget in cents")
 
+
 @router.post("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
 def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
     """
@@ -151,18 +152,47 @@ def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
     currently there is a user input max price per budget
     """
     
-    get_shopping_list = sqlalchemy.text("""
-        SELECT food_id
-        FROM shopping_list_item
-        WHERE list_id = :list_id AND user_id = :user_id
+    find_items = sqlalchemy.text("""
+        WITH they_got_it AS (
+            SELECT 
+                food_item.name AS item,
+                store.name AS store_name, 
+                store.store_id AS store_id,
+                catalog_item.price AS price,
+                ROUND((earth_distance(
+                    ll_to_earth(store.latitude, store.longitude), 
+                    ll_to_earth((SELECT latitude FROM users WHERE users.user_id = :user_id), 
+                                (SELECT longitude FROM users WHERE users.user_id = :user_id))
+                ) / 1000)::NUMERIC, 1)::FLOAT AS distance
+            FROM store
+            JOIN catalog ON catalog.store_id = store.store_id
+            JOIN catalog_item ON catalog.catalog_id = catalog_item.catalog_id
+            JOIN food_item ON food_item.food_id = catalog_item.food_id
+            WHERE food_item.food_id IN (
+                SELECT food_id
+                FROM shopping_list_item
+                WHERE list_id = :list_id
+                )
+                AND price < :budget
+            ORDER BY item, price
+        ),
+        ranked_stores AS (
+            SELECT  item, store_name, store_id, price, distance, 
+                    RANK() OVER (PARTITION BY item ORDER BY price) AS ranks
+            FROM they_got_it
+        )
+        SELECT item, store_name, store_id, price, distance, ranks
+        FROM ranked_stores
+        WHERE ranks = 1
     """)
     
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
             try:
-                shopping_list = conn.execute(get_shopping_list, 
+                shopping_list = conn.execute(find_items, 
                                              {"user_id": user_id,
-                                              "list_id": list_id})
+                                              "list_id": list_id,
+                                              "budget": willing_to_spend.budget})
             except NoResultFound as e:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -171,9 +201,14 @@ def fulfill_list(user_id: int, list_id: int, willing_to_spend: fugality_index):
     
     return_list = []
     for item in shopping_list:
-        store = find_store(user_id, item.food_id, willing_to_spend)
-        if store not in return_list:
-            return_list.append(store)
+        return_list.append({
+            "Name": item.store_name,
+            "Store ID": item.store_id,
+            "Distance Away": f"{item.distance} km",
+            "Item": item.item,
+            "Price of Item": f"${item.price / 100:.2f}"
+            
+        })
     return return_list
 
 

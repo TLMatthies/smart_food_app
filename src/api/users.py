@@ -17,7 +17,7 @@ router = APIRouter(
 class User(BaseModel):
     name: str = Field(..., min_length=1)
     location: Optional[str] = Field(default="Calpoly SLO")  # Default "Calpoly SLO"
-    longitude: Optional[float] = Field(default=120.6625)  # Default longitude
+    longitude: Optional[float] = Field(default=-120.6625)  # Default longitude
     latitude: Optional[float] = Field(default=35.3050)    # Default latitude
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
