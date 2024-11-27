@@ -139,17 +139,15 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
         }
 
 
-class fugality_index(BaseModel):
-    budget: Optional[int] = Field(default=MAXINT,
-                                  ge=0,
-                                  description="Budget in cents")
 
 
 @router.post("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
 def fulfill_list(user_id: int, list_id: int,
-                 willing_to_spend: fugality_index,
+                 budget: int = Query(MAXINT, 
+                    description="Most willing you're to spend on an item in cents", gt=0),
                  max_dist: int = Query(10, description="Range in km", gt=0),
-                 order_by: int = Query(1, description="Order by option: 1=price,distance; 2=price; 3=distance")):
+                 order_by: int = Query(1, 
+                    description="Order by option: 1=price,distance; 2=price; 3=distance")):
     """
     Generate a list of the closest_stores to fufil a list
     currently there is a user input max price per budget
@@ -206,7 +204,7 @@ def fulfill_list(user_id: int, list_id: int,
     
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
-
+            # block of checks before executing the big sql statement to catch errors
             try:
                 conn.execute(sqlalchemy.text("""
                     SELECT 1 FROM users 
@@ -238,8 +236,8 @@ def fulfill_list(user_id: int, list_id: int,
             shopping_list = conn.execute(find_items, 
                                         {"user_id": user_id,
                                         "list_id": list_id,
-                                        "budget": willing_to_spend.budget,
-                                        "range":max_dist})
+                                        "budget": budget,
+                                        "range": max_dist})
 
     
     return_list = []
@@ -267,7 +265,6 @@ def find_snack(user_id: int, food_id: int,
     We'll find you the closet place thats got what you want.
     Optional: find the cheapest place thats got what you want. 
     """
-
     options = {
         1 : "price, distance",
         2 : "price",
@@ -275,11 +272,11 @@ def find_snack(user_id: int, food_id: int,
     }
     
     try:
-        option = options[order_by]  # Access the dictionary with the user-provided 'order_by'
+        option = options[order_by]
     except KeyError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,  # 400 Bad Request
-            detail="Invalid order_by option"  # Informative error message
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid order_by option"
         )
     
     find_item = sqlalchemy.text(f"""
