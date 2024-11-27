@@ -17,12 +17,12 @@ router = APIRouter(
 )
 
 class StoreLocation(BaseModel):
-    latitude: float
-    longitude: float
+    longitude: float = Field(le=180, ge=-180)
+    latitude: float = Field(le=90, ge=-90)
 
 class Store(BaseModel):
-    store_id: str
-    name: str
+    store_id: int
+    name: str = Field(pattern=r"^[a-zA-Z0-9_]+$", min_length=1, max_length=82)
     hours: tuple[str, str]  # (open_time, close_time)
     location: StoreLocation
 
@@ -116,7 +116,8 @@ class PricesRequest(BaseModel):
 @router.post("/compare-prices")
 def compare_prices(request: PricesRequest):
     """
-    Find the stores with the best prices"""
+    Find the stores with the best prices
+    """
 
     query = """
     SELECT store.store_id AS id, store.name AS name, price
