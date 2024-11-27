@@ -50,14 +50,14 @@ def list_facts(user_id: int, list_id: int):
     
     grab_facts = sqlalchemy.text("""
     SELECT
-    COALESCE(food_item.name, 'Total') AS name,
-    SUM((shopping_list_item.quantity) * (serving_size)) AS total_servings,
-    SUM((shopping_list_item.quantity) * (saturated_fat)) AS total_saturated_fat,
-    SUM((shopping_list_item.quantity) * (trans_fat)) AS total_trans_fat,
-    SUM((shopping_list_item.quantity) * (dietary_fiber)) AS total_dietary_fiber,
-    SUM((shopping_list_item.quantity) * (total_carbohydrate)) AS total_carbohydrates,
-    SUM((shopping_list_item.quantity) * (total_sugars)) AS total_sugars,
-    SUM((shopping_list_item.quantity) * (protein)) AS total_protein
+        COALESCE(food_item.name, 'Total') AS name,
+        SUM((shopping_list_item.quantity) * (serving_size)) AS total_servings,
+        SUM((shopping_list_item.quantity) * (saturated_fat)) AS total_saturated_fat,
+        SUM((shopping_list_item.quantity) * (trans_fat)) AS total_trans_fat,
+        SUM((shopping_list_item.quantity) * (dietary_fiber)) AS total_dietary_fiber,
+        SUM((shopping_list_item.quantity) * (total_carbohydrate)) AS total_carbohydrates,
+        SUM((shopping_list_item.quantity) * (total_sugars)) AS total_sugars,
+        SUM((shopping_list_item.quantity) * (protein)) AS total_protein
     FROM shopping_list
     JOIN shopping_list_item on shopping_list.list_id = shopping_list_item.list_id
     JOIN food_item on shopping_list_item.food_id = food_item.food_id
