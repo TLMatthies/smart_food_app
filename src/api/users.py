@@ -45,7 +45,7 @@ def create_user(new_user: User):
                             detail="Failed to create user.")
             
     
-@router.get("/{user_id}/lists/{list_id}/list_facts", status_code=status.HTTP_200_OK)
+@router.get("/{user_id}/lists/{list_id}/facts", status_code=status.HTTP_200_OK)
 def list_facts(user_id: int, list_id: int):
     
     grab_facts = sqlalchemy.text("""
