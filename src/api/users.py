@@ -136,7 +136,7 @@ def create_list(user_id: int, name: str):
     """
     user_data = {"user_id": user_id, "name": name}
     check_user_query = sqlalchemy.text("""
-        SELECT 1 FROM preference WHERE user_id = :user_id
+        SELECT 1 FROM users WHERE user_id = :user_id
     """)
     with db.engine.begin() as conn:
         try:
