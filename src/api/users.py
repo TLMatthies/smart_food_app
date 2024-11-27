@@ -47,7 +47,12 @@ def create_user(new_user: User):
     
 @router.get("/{user_id}/lists/{list_id}/facts", status_code=status.HTTP_200_OK)
 def list_facts(user_id: int, list_id: int):
-    
+    """
+    Provides a breakdown of nutritional information for each item in a shopping list,
+    including total servings and macro and micronutrient values.
+    Also provides a summary row with the total for all items.
+    returns a dictionary of dictionaries
+    """
     grab_facts = sqlalchemy.text("""
     SELECT
         COALESCE(food_item.name, 'Total') AS name,
