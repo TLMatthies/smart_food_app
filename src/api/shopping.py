@@ -148,6 +148,7 @@ class fugality_index(BaseModel):
 @router.post("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
 def fulfill_list(user_id: int, list_id: int,
                  willing_to_spend: fugality_index,
+                 max_dist: int = Query(10, description="Range in km", gt=0),
                  order_by: int = Query(1, description="Order by option: 1=price,distance; 2=price; 3=distance")):
     """
     Generate a list of the closest_stores to fufil a list
@@ -161,11 +162,11 @@ def fulfill_list(user_id: int, list_id: int,
     }
     
     try:
-        option = options[order_by]  # Access the dictionary with the user-provided 'order_by'
+        option = options[order_by]
     except KeyError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,  # 400 Bad Request
-            detail="Invalid order_by option"  # Informative error message
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid order_by option"
         )
     
     find_items = sqlalchemy.text(f"""
@@ -196,6 +197,7 @@ def fulfill_list(user_id: int, list_id: int,
             SELECT  item, store_name, store_id, price, distance, 
                     RANK() OVER (PARTITION BY item ORDER BY {option}) AS ranks
             FROM they_got_it
+            WHERE distance < :range
         )
         SELECT item, store_name, store_id, price, distance, ranks
         FROM ranked_stores
@@ -204,16 +206,41 @@ def fulfill_list(user_id: int, list_id: int,
     
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
+
             try:
-                shopping_list = conn.execute(find_items, 
-                                             {"user_id": user_id,
-                                              "list_id": list_id,
-                                              "budget": willing_to_spend.budget})
-            except NoResultFound as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"User or List does not exist, {e}"
-                )
+                conn.execute(sqlalchemy.text("""
+                    SELECT 1 FROM users 
+                    WHERE user_id = :user_id
+                    """), {"user_id": user_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist.")
+
+            try:
+                conn.execute(sqlalchemy.text("""
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id
+                    """), {"list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="List does not exist.")
+
+            try:
+                conn.execute(
+                    sqlalchemy.text("""
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id AND user_id = :user_id
+                    """),{"user_id": user_id, "list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User is not associated with this list.")
+            
+            shopping_list = conn.execute(find_items, 
+                                        {"user_id": user_id,
+                                        "list_id": list_id,
+                                        "budget": willing_to_spend.budget,
+                                        "range":max_dist})
+
     
     return_list = []
     for item in shopping_list:
@@ -225,83 +252,97 @@ def fulfill_list(user_id: int, list_id: int,
             "Price of Item": f"${item.price / 100:.2f}"
             
         })
+    if not return_list:  # Check if the list is empty
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="No stores found with given parameters.")
     return return_list
 
 
 @router.post("{user_id}/find_snack/{food_id}", status_code=status.HTTP_200_OK)
-def find_snack(user_id: int, food_id: int, params: fugality_index):
+def find_snack(user_id: int, food_id: int,
+                max_dist: int = Query(10, description="Range in km", gt=0),
+                order_by: int = Query(3, description="Order by option: 1=price,distance; 2=price; 3=distance")):
     """
-    Finds closest store with given food_id. 
+    Lookin for a quick snack, just put in your food_id.
+    We'll find you the closet place thats got what you want.
+    Optional: find the cheapest place thats got what you want. 
     """
-    budget = params.budget
 
-    get_user_info_query = sqlalchemy.text(
-        """
-        SELECT longitude, latitude
-        FROM users
-        WHERE users.user_id = :user_id
-        """
-    )
-
-    find_matching_store_ids_query = sqlalchemy.text(
-        """
-        SELECT longitude, latitude, food_item.name,
-        store.name as store_name, store.store_id as store_id,
-        catalog_item.price as price
-
-        FROM store
-
-        JOIN catalog ON catalog.store_id = store.store_id
-        JOIN catalog_item ON catalog.catalog_id = catalog_item.catalog_id
-        JOIN food_item ON food_item.food_id = catalog_item.food_id
-        WHERE food_item.food_id = :food_id
+    options = {
+        1 : "price, distance",
+        2 : "price",
+        3 : "distance"
+    }
+    
+    try:
+        option = options[order_by]  # Access the dictionary with the user-provided 'order_by'
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,  # 400 Bad Request
+            detail="Invalid order_by option"  # Informative error message
+        )
+    
+    find_item = sqlalchemy.text(f"""
+        WITH they_got_it AS (
+            SELECT 
+                food_item.name AS item,
+                store.name AS store_name, 
+                store.store_id AS store_id,
+                catalog_item.price AS price,
+                ROUND((earth_distance(
+                    ll_to_earth(store.latitude, store.longitude), 
+                    ll_to_earth((SELECT latitude FROM users WHERE users.user_id = :user_id), 
+                                (SELECT longitude FROM users WHERE users.user_id = :user_id))
+                ) / 1000)::NUMERIC, 1)::FLOAT AS distance
+            FROM store
+            JOIN catalog ON catalog.store_id = store.store_id
+            JOIN catalog_item ON catalog.catalog_id = catalog_item.catalog_id
+            JOIN food_item ON food_item.food_id = catalog_item.food_id
+            WHERE food_item.food_id = :food_id
+            ORDER BY item, {option}
+        ),
+        ranked_stores AS (
+            SELECT  item, store_name, store_id, price, distance, 
+                    RANK() OVER (PARTITION BY item ORDER BY {option}) AS ranks
+            FROM they_got_it
+            WHERE distance < :range
+        )
+        SELECT item, store_name, store_id, price, distance, ranks
+        FROM ranked_stores
+        WHERE ranks = 1
+        LIMIT 1
     """)
-
-    food_data = {"food_id": food_id}
     
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
-            
             try:
-                user_info = conn.execute(get_user_info_query, {"user_id": user_id}).one()
-            except NoResultFound as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"User does not exist, {e}"
-                )
-                
-            try:
-                result = conn.execute(find_matching_store_ids_query, food_data)
-            except NoResultFound as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"food_id: {food_id} does not exist, {e}"
-                )
+                store = conn.execute(find_item, 
+                                             {"user_id": user_id,
+                                              "food_id": food_id,
+                                              "range": max_dist}).one()
+            except NoResultFound:
+                try:
+                    conn.execute(sqlalchemy.text("SELECT 1 FROM users WHERE user_id = :user_id"),
+                                 {"user_id": user_id}).one()
+                except NoResultFound:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                        detail="User does not exist.")
+                try:
+                    conn.execute(sqlalchemy.text("SELECT 1 FROM food_item WHERE food_id = :food_id"),
+                                 {"food_id": food_id}).one()
+                except NoResultFound:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                        detail="Food_id does not exist.")
 
-            valid_stores = [
-                {
-                    "name": row.store_name,
-                    "store_id": row.store_id,
-                    "item_name" : row.name,
-                    "price": row.price,
-                    "distance": geodesic((user_info.latitude, user_info.longitude), (row.latitude, row.longitude)).km
-                }
-                for row in result if row.price <= budget
-            ]
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="No stores in range.")
 
-    if not valid_stores:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No stores found with the requested item, food_id {food_id} and budget {budget}"
-        )
-
-    # Sort by distance and get closest store
-    valid_stores.sort(key=lambda store: store["distance"])
-    closest_store = valid_stores[0]
-    return {
-        "Name": closest_store["name"],
-        "Store ID": closest_store["store_id"],
-        "Distance Away": f"{closest_store['distance']:.2f} km",
-        "Item": closest_store["item_name"],
-        "Price of Item": f"${closest_store['price'] / 100:.2f}"
+    return_item = {
+        "Name": store.store_name,
+        "Store ID": store.store_id,
+        "Distance Away": f"{store.distance} km",
+        "Item": store.item,
+        "Price of Item": f"${store.price / 100:.2f}"   
     }
+    
+    return return_item
