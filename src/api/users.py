@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 import sqlalchemy
+from sqlalchemy.exc import IntegrityError, NoResultFound
 import logging
 from src import database as db
 from src.api import auth
@@ -44,76 +45,88 @@ def create_user(new_user: User):
                             detail="Failed to create user.")
             
     
-@router.post("/{user_id}/preferences", status_code=status.HTTP_201_CREATED)
-def add_preferences(user_id: int, budget: int):
-    """
-    Adds user preference onto user account (only budget for now). Budget is stored as 100 x value to avoid decimal problems.
-    For example if you wanted to enter a budget of $9.99, enter 999.
-    """
-    if budget <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Budget must be greater than 0"
-        )
-    # Either adds preferences, or if already exists then change the budget value
-    manage_preferences = sqlalchemy.text("""
-                    INSERT INTO preference (user_id, budget)
-                    VALUES (:user_id, :budget)
-                    ON CONFLICT (user_id) DO UPDATE 
-                    SET budget = :budget
-                                         """)
+@router.get("/{user_id}/lists/{list_id}/list_facts", status_code=status.HTTP_201_CREATED)
+def list_facts(user_id: int, list_id: int):
     
-    preference_data = {"user_id": user_id, "budget": budget}
-    
-    
-    with db.engine.begin() as conn:
-        
-        try:
-            conn.execute(manage_preferences, preference_data)
-        
-        except Exception as e:
-            logger.exception(f"Error changing preferences: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User ID not found in database"
-            )
-    return {"message": "Preference successfully updated"}
-            
-    
-@router.get("/{user_id}/preferences")
-def get_preferences(user_id: int):
-    """
-    Gets user preference (only budget for now)
-    """
-    user_data = {"user_id": user_id}
-    get_pref = sqlalchemy.text("""
-            SELECT budget
-            FROM preference
-            WHERE user_id = :user_id
-            """)
-    check_user_query = sqlalchemy.text("""
-        SELECT 1 FROM preference WHERE user_id = :user_id
+    grab_facts = sqlalchemy.text("""
+    SELECT
+    COALESCE(food_item.name, 'Total') AS name,
+    SUM((shopping_list_item.quantity) * (serving_size)) AS total_servings,
+    SUM((shopping_list_item.quantity) * (saturated_fat)) AS total_saturated_fat,
+    SUM((shopping_list_item.quantity) * (trans_fat)) AS total_trans_fat,
+    SUM((shopping_list_item.quantity) * (dietary_fiber)) AS total_dietary_fiber,
+    SUM((shopping_list_item.quantity) * (total_carbohydrate)) AS total_carbohydrates,
+    SUM((shopping_list_item.quantity) * (total_sugars)) AS total_sugars,
+    SUM((shopping_list_item.quantity) * (protein)) AS total_protein
+    FROM shopping_list
+    JOIN shopping_list_item on shopping_list.list_id = shopping_list_item.list_id
+    JOIN food_item on shopping_list_item.food_id = food_item.food_id
+    WHERE
+    shopping_list.list_id = :list_id
+    GROUP BY ROLLUP (food_item.name)
     """)
+    
+    with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
+        with conn.begin():
+            # block of checks before executing the big sql statement to catch errors
+            try:
+                conn.execute(sqlalchemy.text("""
+                    SELECT 1 FROM users 
+                    WHERE user_id = :user_id
+                    """), {"user_id": user_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist.")
 
-    with db.engine.begin() as conn:
-        try:
-            user_exists = conn.execute(check_user_query, user_data).scalar_one()
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User does not exist or preferences have not been set"
-            )
-        try:
-            budget = conn.execute(get_pref, user_data).scalar_one()
-            return "Budget " + str(budget)
+            try:
+                conn.execute(sqlalchemy.text("""
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id
+                    """), {"list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="List does not exist.")
+
+            try:
+                conn.execute(
+                    sqlalchemy.text("""
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id AND user_id = :user_id
+                    """),{"user_id": user_id, "list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User is not associated with this list.")
             
-        except Exception as e:
-            logger.exception(f"Error getting preferences: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User doesn't exist or user has not set preferences yet"
-            )
-
+            try:
+                conn.execute(
+                    sqlalchemy.text("""
+                    SELECT 1
+                    FROM shopping_list
+                    JOIN shopping_list_item on shopping_list.list_id = shopping_list_item.list_id
+                    WHERE shopping_list.list_id = :list_id
+                    """),{"list_id": list_id}).first()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_204_NO_CONTENT,
+                    detail="List is empty, add something to it!")
+            
+            try:
+                nutrition_info = conn.execute(grab_facts, {"list_id": list_id})
+            except Exception as e:
+                raise HTTPException(status_code=500, 
+                    detail=f"Something went wrong {e}")
+    
+    nutrition_dict = {}
+    for item in nutrition_info:
+        nutrition_dict[item.name] = {
+            "total_servings": item.total_servings,
+            "total_saturated_fat": item.total_saturated_fat,
+            "total_trans_fat": item.total_trans_fat,
+            "total_dietary_fiber": item.total_dietary_fiber,
+            "total_carbohydrates": item.total_carbohydrates,
+            "total_sugars": item.total_sugars,
+            "total_protein": item.total_protein
+        }
+    return nutrition_dict
 
 
 @router.post("/{user_id}/lists", status_code=status.HTTP_201_CREATED)
