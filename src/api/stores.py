@@ -17,12 +17,12 @@ router = APIRouter(
 )
 
 class StoreLocation(BaseModel):
-    latitude: float
-    longitude: float
+    longitude: float = Field(le=180, ge=-180)
+    latitude: float = Field(le=90, ge=-90)
 
 class Store(BaseModel):
-    store_id: str
-    name: str
+    store_id: int
+    name: str = Field(pattern=r"^[a-zA-Z0-9_]+$", min_length=1, max_length=82)
     hours: tuple[str, str]  # (open_time, close_time)
     location: StoreLocation
 
