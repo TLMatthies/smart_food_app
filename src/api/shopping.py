@@ -19,7 +19,7 @@ router = APIRouter(
 )
 
 
-@router.post("/route_optimize", status_code=status.HTTP_200_OK)
+@router.get("/route_optimize", status_code=status.HTTP_200_OK)
 def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
     """
     Finds nearby stores with given food_id. 
@@ -141,7 +141,7 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
 
 
 
-@router.post("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
+@router.get("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
 def fulfill_list(user_id: int, list_id: int,
                  budget: int = Query(MAXINT, 
                     description="Most willing you're to spend on an item in cents", gt=0),
@@ -256,7 +256,7 @@ def fulfill_list(user_id: int, list_id: int,
     return return_list
 
 
-@router.post("{user_id}/find_snack/{food_id}", status_code=status.HTTP_200_OK)
+@router.get("{user_id}/find_snack/{food_id}", status_code=status.HTTP_200_OK)
 def find_snack(user_id: int, food_id: int,
                 max_dist: int = Query(10, description="Range in km", gt=0),
                 order_by: int = Query(3, description="Order by option: 1=price,distance; 2=price; 3=distance")):
