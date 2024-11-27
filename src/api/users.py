@@ -97,15 +97,15 @@ def list_facts(user_id: int, list_id: int):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                     detail="User is not associated with this list.")
             
-            try:
-                conn.execute(
-                    sqlalchemy.text("""
-                    SELECT 1
-                    FROM shopping_list
-                    JOIN shopping_list_item on shopping_list.list_id = shopping_list_item.list_id
-                    WHERE shopping_list.list_id = :list_id
-                    """),{"list_id": list_id}).first()
-            except NoResultFound:
+            
+            isEmpty = conn.execute(
+                sqlalchemy.text("""
+                SELECT 1
+                FROM shopping_list
+                JOIN shopping_list_item on shopping_list.list_id = shopping_list_item.list_id
+                WHERE shopping_list.list_id = :list_id
+                """),{"list_id": list_id}).scalar()
+            if isEmpty == None:
                 raise HTTPException(status_code=status.HTTP_204_NO_CONTENT,
                     detail="List is empty, add something to it!")
             
