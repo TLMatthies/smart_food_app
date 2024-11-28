@@ -72,6 +72,7 @@ CREATE TABLE public.shopping_list_item (
     user_id bigint NOT NULL,
     quantity integer,
     CONSTRAINT shopping_list_item_pkey PRIMARY KEY (list_id, food_id),
+    CONSTRAINT unique_user_list_item UNIQUE (user_id, list_id, food_id),
     CONSTRAINT shopping_list_item_food_id_fkey FOREIGN KEY (food_id) REFERENCES food_item(food_id),
     CONSTRAINT shopping_list_item_list_id_fkey FOREIGN KEY (list_id) REFERENCES shopping_list(list_id),
     CONSTRAINT shopping_list_item_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id)
