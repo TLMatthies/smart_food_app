@@ -59,14 +59,14 @@ FOOD_WORDS = [
 def reset_tables(conn):
     print("Resetting database tables...")
     conn.execute(sqlalchemy.text("""
-        DROP TABLE IF EXISTS shopping_list_item;
-        DROP TABLE IF EXISTS shopping_list;
-        DROP TABLE IF EXISTS preference;
-        DROP TABLE IF EXISTS catalog_item;
-        DROP TABLE IF EXISTS catalog;
-        DROP TABLE IF EXISTS store;
-        DROP TABLE IF EXISTS food_item;
-        DROP TABLE IF EXISTS "Users" CASCADE;
+        DROP TABLE IF EXISTS shopping_list_item CASCADE;
+        DROP TABLE IF EXISTS shopping_list CASCADE;
+        DROP TABLE IF EXISTS preference CASCADE;
+        DROP TABLE IF EXISTS catalog_item CASCADE;
+        DROP TABLE IF EXISTS catalog CASCADE;
+        DROP TABLE IF EXISTS store CASCADE;
+        DROP TABLE IF EXISTS food_item CASCADE;
+        DROP TABLE IF EXISTS users CASCADE;
         
         ALTER SEQUENCE IF EXISTS catalog_catalog_id_seq RESTART WITH 1;
         ALTER SEQUENCE IF EXISTS store_store_id_seq RESTART WITH 1;
@@ -96,7 +96,7 @@ def generate_users(batch_size=1000):
     for i in range(0, NUM_USERS, batch_size):
         users = []
         for _ in range(min(batch_size, NUM_USERS - i)):
-            lat, long = generate_location(SLO_LAT, SLO_LONG, 0.05)
+            lat, long = generate_location(SLO_LAT, SLO_LONG, 0.1)
             user = {
                 "name": fake.unique.name(),
                 "location": "San Luis Obispo",
@@ -111,7 +111,7 @@ def generate_stores():
     stores = []
     # Add real stores
     for name in STORE_NAMES:
-        lat, long = generate_location(SLO_LAT, SLO_LONG, 0.02)
+        lat, long = generate_location(SLO_LAT, SLO_LONG, 0.1)
         open_time, close_time = create_store_hours()
         store = {
             "name": name,
@@ -126,7 +126,7 @@ def generate_stores():
     # Add generated stores
     remaining_stores = NUM_STORES - len(STORE_NAMES)
     for _ in range(remaining_stores):
-        lat, long = generate_location(SLO_LAT, SLO_LONG, 0.03)
+        lat, long = generate_location(SLO_LAT, SLO_LONG, 0.1)
         open_time, close_time = create_store_hours()
         store = {
             "name": f"{fake.company()} Market",
@@ -243,7 +243,7 @@ with engine.begin() as conn:
         for user in batch:
             result = conn.execute(
                 sqlalchemy.text("""
-                INSERT INTO "Users" (name, location, longitude, latitude)
+                INSERT INTO users (name, location, longitude, latitude)
                 VALUES (:name, :location, :longitude, :latitude)
                 RETURNING user_id
                 """),
