@@ -335,3 +335,50 @@ def delete_list(user_id: int, list_id: int):
             DELETE FROM shopping_list_item WHERE list_id = :list_id;
             DELETE FROM shopping_list WHERE list_id = :list_id;
             """), {"list_id":list_id})
+        
+@router.get("{user_id}/list/{list_id}", status_code=status.HTTP_200_OK)
+def get_list(user_id: int, list_id: int):
+    with db.engine.begin() as conn:
+        try:
+            conn.execute(sqlalchemy.text("""
+                SELECT 1 FROM users 
+                WHERE user_id = :user_id
+                """), {"user_id": user_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="User does not exist.")
+        try:
+            conn.execute(sqlalchemy.text("""
+                SELECT 1 FROM shopping_list 
+                WHERE list_id = :list_id
+                """), {"list_id": list_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="List does not exist.")
+        try:
+            conn.execute(
+                sqlalchemy.text("""
+                SELECT 1 FROM shopping_list 
+                WHERE list_id = :list_id AND user_id = :user_id
+                """),{"user_id": user_id, "list_id": list_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="User is not associated with this list.")
+        
+        data = conn.execute(sqlalchemy.text("""
+            SELECT food_item.name AS name, shopping_list_item.quantity AS quantity
+            FROM shopping_list_item
+            JOIN shopping_list ON shopping_list.list_id = shopping_list_item.list_id
+            JOIN food_item ON food_item.food_id = shopping_list_item.food_id
+            WHERE shopping_list.list_id = :list_id"""
+            ), {"list_id": list_id})
+        
+        return_list = []
+        for row in data:
+            return_list.append(
+                {
+                    "name": row.name,
+                    "quantity": row.quantity
+                }
+            )
+        return return_list
