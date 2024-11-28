@@ -131,7 +131,7 @@ Get the user's preferences.
 
 ### 2.4 Make a shopping list - `/users/{user_id}/lists` (POST)
 
-Creates a new shopping list for a user.
+Creates a new shopping list for a user. Name is the name of the new list.
 
 **Request**:
 
