@@ -61,7 +61,6 @@ def reset_tables(conn):
     conn.execute(sqlalchemy.text("""
         DROP TABLE IF EXISTS shopping_list_item CASCADE;
         DROP TABLE IF EXISTS shopping_list CASCADE;
-        DROP TABLE IF EXISTS preference CASCADE;
         DROP TABLE IF EXISTS catalog_item CASCADE;
         DROP TABLE IF EXISTS catalog CASCADE;
         DROP TABLE IF EXISTS store CASCADE;
