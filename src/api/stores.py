@@ -7,6 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import logging
 from src import database as db
 from src.api import auth
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,14 @@ class StoreLocation(BaseModel):
     longitude: float = Field(le=180, ge=-180)
     latitude: float = Field(le=90, ge=-90)
 
+class Hours(BaseModel):
+    open_time: int
+    close_time: int
+
 class Store(BaseModel):
     store_id: int
     name: str = Field(pattern=r"^[a-zA-Z0-9_]+$", min_length=1, max_length=82)
-    hours: tuple[str, str]  # (open_time, close_time)
+    hours: Hours  # (open_time, close_time)
     location: StoreLocation
 
 @router.get("/")
@@ -43,70 +48,66 @@ def get_stores():
                 )
             )
             
-            stores = []
-            for row in result:
-                stores.append({
-                    "store_id": str(row.store_id),
-                    "name": row.name,
-                    "hours": (str(row.open_time), str(row.close_time)),
-                    "location": {
-                        "latitude": row.latitude,
-                        "longitude": row.longitude
-                    }
-                })
+        stores = []
+        for row in result:
+            # Extract the time portion from the datetime strings
+            open_time = int(datetime.strptime(str(row.open_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
+            close_time = int(datetime.strptime(str(row.close_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
             
-            return stores
+            stores.append({
+                "store_id": str(row.store_id),
+                "name": row.name,
+                "hours": {
+                    "open": open_time,
+                    "close": close_time
+                },
+                "location": {
+                    "latitude": row.latitude,
+                    "longitude": row.longitude
+                }
+            })
+            
+        return stores
             
     except Exception as e:
         logger.exception(f"Error fetching stores: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch stores"
-            )
+        )
     
 
 @router.get("/{store_id}/catalog")
 def get_catalog(store_id: int):
     """
-    Retrieves the list of items that the store has in its catalog, item_sku, name, price, quantity
+    Retrieves the list of items that the store has in its catalog, including item_sku, name, price, and quantity.
     """
     id_data = {"store_id": store_id}
     fetch_catalog = sqlalchemy.text("""
-            SELECT catalog_item_id as item_sku, name, quantity, price
-            FROM catalog_item
-            JOIN catalog ON catalog_item.catalog_id = catalog.catalog_id
-            JOIN food_item fi ON catalog_item.food_id = fi.food_id
-            WHERE catalog.store_id = :store_id
-                                    """)
-    
+        SELECT catalog_item_id as item_sku, name, quantity, price
+        FROM catalog_item
+        JOIN catalog ON catalog_item.catalog_id = catalog.catalog_id
+        JOIN food_item fi ON catalog_item.food_id = fi.food_id
+        WHERE catalog.store_id = :store_id
+    """)
+
     with db.engine.begin() as conn:
-            
         try:
-            db_catalog = conn.execute(fetch_catalog,id_data)
-        
+            db_catalog = conn.execute(fetch_catalog, id_data).mappings().all()
         except Exception as e:
             logger.exception(f"Error fetching catalog: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to fetch catalog for store"
             )
-        
-        catalog = []
-        for item in db_catalog:
-            catalog.append({
-                "item_sku": str(item.item_sku),
-                "name": item.name,
-                "quantity": item.quantity,
-                "price": item.price
-            })
-            
-        if catalog == []:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Store ID not found in database"
-            )
-        return catalog
 
+    if not db_catalog:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store ID not found in database"
+        )
+
+    return db_catalog
 
 class PricesRequest(BaseModel):
     food_id: int = Field(ge=0)

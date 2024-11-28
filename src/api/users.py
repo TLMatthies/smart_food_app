@@ -167,12 +167,12 @@ def create_list(user_id: int, name: str):
                 detail="Failed create shopping list"
             )
 
-class item(BaseModel):
+class Item(BaseModel):
     food_id: int
-    quantity: int
+    quantity: int = Field(..., ge=1)
 
 @router.post("/{user_id}/lists/{list_id}", status_code=status.HTTP_201_CREATED)
-def add_item_to_list(list_id: int, user_id: int, items: list[item]):
+def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
     """
     Add items to specified list, and specified user
     """
@@ -180,12 +180,6 @@ def add_item_to_list(list_id: int, user_id: int, items: list[item]):
     check_user_query = sqlalchemy.text("""
         SELECT 1 FROM users WHERE user_id = :user_id
     """)
-    for item in items:
-        if item.quantity <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Quantity must be greater than 0"
-            )
     item_dicts = [{"list_id": list_id, "user_id": user_id, "food_id": item.food_id, "quantity": item.quantity} for item in items]
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
