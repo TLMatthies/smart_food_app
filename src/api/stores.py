@@ -51,8 +51,8 @@ def get_stores():
         stores = []
         for row in result:
             # Extract the time portion from the datetime strings
-            open_time = datetime.strptime(str(row.open_time), "%Y-%m-%d %H:%M:%S").strftime("%H:%M")
-            close_time = datetime.strptime(str(row.close_time), "%Y-%m-%d %H:%M:%S").strftime("%H:%M")
+            open_time = int(datetime.strptime(str(row.open_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
+            close_time = int(datetime.strptime(str(row.close_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
             
             stores.append({
                 "store_id": str(row.store_id),
@@ -68,14 +68,6 @@ def get_stores():
             })
             
         return stores
-            
-    except Exception as e:
-        logger.exception(f"Error fetching stores: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch stores"
-        )
-
             
     except Exception as e:
         logger.exception(f"Error fetching stores: {e}")

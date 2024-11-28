@@ -93,33 +93,23 @@ def optimize_shopping_route(user_id: int, food_id: int, budget: int = Query(0, d
     valid_stores_by_distance = sorted(valid_stores, key=lambda store: store["distance"])
     closest_store = valid_stores_by_distance[0]
 
-    if budget > 0:
-        valid_stores_by_price = sorted(valid_stores, key=lambda store: store["price"])
-        best_value_store = valid_stores_by_price[0]
+    valid_stores_by_price = sorted(valid_stores, key=lambda store: store["price"])
+    best_value_store = valid_stores_by_price[0]
 
-        return {
-            "Closest Store": {
-                "Name": closest_store["name"],
-                "Store ID": closest_store["store_id"],
-                "Distance Away": f"{closest_store['distance']:.2f} km",
-                "Price of Item": f"${closest_store['price']/100:,.2f}"
-            },
-            "Best Value Store": {
-                "Name": best_value_store["name"],
-                "Store ID": best_value_store["store_id"],
-                "Distance Away": f"{best_value_store['distance']:.2f} km",
-                "Price of Item": f"${best_value_store['price']/100:,.2f}"
-            }
+    return {
+        "Closest Store": {
+            "Name": closest_store["name"],
+            "Store ID": closest_store["store_id"],
+            "Distance Away": f"{closest_store['distance']:.2f} km",
+            "Price of Item": f"${closest_store['price']/100:,.2f}"
+        },
+        "Best Value Store": {
+            "Name": best_value_store["name"],
+            "Store ID": best_value_store["store_id"],
+            "Distance Away": f"{best_value_store['distance']:.2f} km",
+            "Price of Item": f"${best_value_store['price']/100:,.2f}"
         }
-    else:
-        return {
-            "Closest Store": {
-                "Name": closest_store["name"],
-                "Store ID": closest_store["store_id"],
-                "Distance Away": f"{closest_store['distance']:.2f} km",
-                "Price of Item": f"${closest_store['price']/100:,.2f}"
-            }
-        }
+    }
 
 @router.get("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
 def fulfill_list(user_id: int, list_id: int,
