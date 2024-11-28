@@ -366,13 +366,11 @@ def get_list(user_id: int, list_id: int):
             JOIN food_item ON food_item.food_id = shopping_list_item.food_id
             WHERE shopping_list.list_id = :list_id"""
             ), {"list_id": list_id})
-        
-        return_list = []
-        for row in data:
-            return_list.append(
-                {
-                    "name": row.name,
-                    "quantity": row.quantity
-                }
-            )
-        return return_list
+
+        return [
+            {
+                "name": row.name,
+                "quantity": row.quantity
+            }
+            for row in data
+        ]
