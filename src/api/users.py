@@ -300,3 +300,38 @@ def get_list_history(user_id: int):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to fetch user history"
             )
+        
+
+@router.delete("/{user_id}/list/{list_id}/", status_code=status.HTTP_204_NO_CONTENT)
+def delete_list(user_id: int, list_id: int):
+    with db.engine.begin() as conn:
+        try:
+            conn.execute(sqlalchemy.text("""
+                SELECT 1 FROM users 
+                WHERE user_id = :user_id
+                """), {"user_id": user_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="User does not exist.")
+        try:
+            conn.execute(sqlalchemy.text("""
+                SELECT 1 FROM shopping_list 
+                WHERE list_id = :list_id
+                """), {"list_id": list_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="List does not exist.")
+        try:
+            conn.execute(
+                sqlalchemy.text("""
+                SELECT 1 FROM shopping_list 
+                WHERE list_id = :list_id AND user_id = :user_id
+                """),{"user_id": user_id, "list_id": list_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="User is not associated with this list.")
+        
+        conn.execute(sqlalchemy.text("""
+            DELETE FROM shopping_list_item WHERE list_id = :list_id;
+            DELETE FROM shopping_list WHERE list_id = :list_id;
+            """), {"list_id":list_id})
