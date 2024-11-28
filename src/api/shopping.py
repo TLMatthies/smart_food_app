@@ -60,13 +60,7 @@ def optimize_shopping_route(
                     detail=f"User does not exist, {e}"
                 )
 
-            try:
-                result = conn.execute(find_matching_store_ids_query, food_data)
-            except NoResultFound as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Food item does not exist, {e}"
-                )
+            result = conn.execute(find_matching_store_ids_query, food_data)
 
     valid_stores = [
         {
