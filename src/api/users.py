@@ -167,12 +167,12 @@ def create_list(user_id: int, name: str):
                 detail="Failed create shopping list"
             )
 
-class item(BaseModel):
+class Item(BaseModel):
     food_id: int
     quantity: int
 
 @router.post("/{user_id}/lists/{list_id}", status_code=status.HTTP_201_CREATED)
-def add_item_to_list(list_id: int, user_id: int, items: list[item]):
+def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
     """
     Add items to specified list, and specified user
     """

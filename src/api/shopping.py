@@ -20,30 +20,23 @@ router = APIRouter(
 
 
 @router.get("/route_optimize", status_code=status.HTTP_200_OK)
-def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
+def optimize_shopping_route(user_id: int, food_id: int, budget: int = Query(0, description="Budget in cents, default is 0 (no budget limit)")):
     """
-    Finds nearby stores with given food_id. 
-    If use_preferences is toggled to True, 
-    then a user's budget will be accounted
-    when a store is selected. 
-    Otherwise, the closest store to the user with
-    the valid food item is selected.
+    Finds nearby stores with a given food_id.
+    If a budget is specified (greater than 0), only stores offering the food item within the budget are considered.
+    Otherwise, the closest store to the user with the valid food item is selected.
     """
-
     get_user_info_query = sqlalchemy.text("""
-        SELECT longitude, latitude, budget
+        SELECT longitude, latitude
         FROM users
-        LEFT JOIN preference ON users.user_id = preference.user_id                    
-        WHERE users.user_id = :user_id
+        WHERE user_id = :user_id
     """)
 
     find_matching_store_ids_query = sqlalchemy.text("""
         SELECT longitude, latitude,
-        store.name as store_name, store.store_id as store_id,
-        catalog_item.price as price
-
+               store.name as store_name, store.store_id as store_id,
+               catalog_item.price as price
         FROM store
-
         JOIN catalog ON catalog.store_id = store.store_id
         JOIN catalog_item ON catalog.catalog_id = catalog_item.catalog_id
         JOIN food_item ON food_item.food_id = catalog_item.food_id
@@ -51,10 +44,9 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
     """)
 
     food_data = {"food_id": food_id}
-    
+
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
-            
             try:
                 user_info = conn.execute(get_user_info_query, {"user_id": user_id}).one()
             except NoResultFound as e:
@@ -63,13 +55,6 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
                     detail=f"User does not exist, {e}"
                 )
 
-            # If using preferences, check if preferences exist
-            if use_preferences and user_info.budget is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User preferences not set"
-                )
-                
             try:
                 result = conn.execute(find_matching_store_ids_query, food_data)
             except NoResultFound as e:
@@ -78,15 +63,15 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
                     detail=f"Food item does not exist, {e}"
                 )
 
-            valid_stores = [
-                {
-                    "name": row.store_name,
-                    "store_id": row.store_id,
-                    "price": row.price,
-                    "distance": geodesic((user_info.latitude, user_info.longitude), (row.latitude, row.longitude)).km
-                }
-                for row in result
-            ]
+    valid_stores = [
+        {
+            "name": row.store_name,
+            "store_id": row.store_id,
+            "price": row.price,
+            "distance": geodesic((user_info.latitude, user_info.longitude), (row.latitude, row.longitude)).km
+        }
+        for row in result
+    ]
 
     if not valid_stores:
         raise HTTPException(
@@ -94,33 +79,22 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
             detail="No stores found with the requested item"
         )
 
-    if not use_preferences:
-        # Sort by distance and get closest store
-        valid_stores.sort(key=lambda store: store["distance"])
-        closest_store = valid_stores[0]
-        return {
-            "Closest Store": {
-                "Name": closest_store["name"],
-                "Store ID": closest_store["store_id"],
-                "Distance Away": f"{closest_store['distance']:.2f} km",
-                "Price of Item": f"${closest_store['price'] / 100:.2f}"
-            }
-        }
-    else:
+    if budget > 0:
         # Filter stores by budget
-        valid_stores = [store for store in valid_stores if store["price"] <= user_info.budget]
-        
+        valid_stores = [store for store in valid_stores if store["price"] <= budget]
+
         if not valid_stores:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No valid items within budget exist. Try increasing your budget, or not using user preferences."
+                detail="No valid items within budget exist. Try increasing your budget."
             )
-        
-        # Get closest and best value stores
-        valid_stores_by_distance = sorted(valid_stores, key=lambda store: store["distance"])
+
+    # Get closest and best value stores
+    valid_stores_by_distance = sorted(valid_stores, key=lambda store: store["distance"])
+    closest_store = valid_stores_by_distance[0]
+
+    if budget > 0:
         valid_stores_by_price = sorted(valid_stores, key=lambda store: store["price"])
-        
-        closest_store = valid_stores_by_distance[0]
         best_value_store = valid_stores_by_price[0]
 
         return {
@@ -137,9 +111,15 @@ def optimize_shopping_route(user_id: int, food_id: int, use_preferences: bool):
                 "Price of Item": f"${best_value_store['price']/100:,.2f}"
             }
         }
-
-
-
+    else:
+        return {
+            "Closest Store": {
+                "Name": closest_store["name"],
+                "Store ID": closest_store["store_id"],
+                "Distance Away": f"{closest_store['distance']:.2f} km",
+                "Price of Item": f"${closest_store['price']/100:,.2f}"
+            }
+        }
 
 @router.get("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
 def fulfill_list(user_id: int, list_id: int,
