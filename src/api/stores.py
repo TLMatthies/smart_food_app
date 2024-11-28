@@ -22,8 +22,8 @@ class StoreLocation(BaseModel):
     latitude: float = Field(le=90, ge=-90)
 
 class Hours(BaseModel):
-    open_time: str
-    close_time: str
+    open_time: int
+    close_time: int
 
 class Store(BaseModel):
     store_id: int
