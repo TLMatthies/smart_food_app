@@ -21,8 +21,8 @@ create table
   ) tablespace pg_default;
 
 INSERT INTO store(name, catalog_id, latitude, longitude, open_time, close_time)
-VALUES ('Trader Joes', 1, 150, 150, 2024-10-28 08:30:00, 2024-10-30 09:00:00),
-('Campus Market', 2, 150, 150, 2024-10-25 08:00:00, 2024-10-30 21:00:00);
+VALUES ('Trader Joes', 1, 120, 150, 2024-10-28 08:30:00, 2024-10-30 09:00:00),
+('Campus Market', 2, 150, 130, 2024-10-25 08:00:00, 2024-10-30 21:00:00);
 
 -- Food items table
 create table
