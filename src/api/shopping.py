@@ -20,7 +20,11 @@ router = APIRouter(
 
 
 @router.get("/route_optimize", status_code=status.HTTP_200_OK)
-def optimize_shopping_route(user_id: int, food_id: int, budget: int = Query(0, description="Budget in cents, default is 0 (no budget limit)")):
+def optimize_shopping_route(
+    user_id: int,
+    food_id: int,
+    budget: int = Query(0, description="Budget in cents, default is 0 (no budget limit)")
+):
     """
     Finds nearby stores with a given food_id.
     If a budget is specified (greater than 0), only stores offering the food item within the budget are considered.
@@ -32,7 +36,7 @@ def optimize_shopping_route(user_id: int, food_id: int, budget: int = Query(0, d
         WHERE user_id = :user_id
     """)
 
-    find_matching_store_ids_query = sqlalchemy.text("""
+    find_matching_store_ids_query = sqlalchemy.text(f"""
         SELECT longitude, latitude,
                store.name as store_name, store.store_id as store_id,
                catalog_item.price as price
@@ -41,9 +45,10 @@ def optimize_shopping_route(user_id: int, food_id: int, budget: int = Query(0, d
         JOIN catalog_item ON catalog.catalog_id = catalog_item.catalog_id
         JOIN food_item ON food_item.food_id = catalog_item.food_id
         WHERE food_item.food_id = :food_id
+        {"AND catalog_item.price <= :budget" if budget > 0 else ""}
     """)
 
-    food_data = {"food_id": food_id}
+    food_data = {"food_id": food_id, "budget": budget} if budget > 0 else {"food_id": food_id}
 
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
@@ -79,16 +84,6 @@ def optimize_shopping_route(user_id: int, food_id: int, budget: int = Query(0, d
             detail="No stores found with the requested item"
         )
 
-    if budget > 0:
-        # Filter stores by budget
-        valid_stores = [store for store in valid_stores if store["price"] <= budget]
-
-        if not valid_stores:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No valid items within budget exist. Try increasing your budget."
-            )
-
     # Get closest and best value stores
     valid_stores_by_distance = sorted(valid_stores, key=lambda store: store["distance"])
     closest_store = valid_stores_by_distance[0]
@@ -110,6 +105,7 @@ def optimize_shopping_route(user_id: int, food_id: int, budget: int = Query(0, d
             "Price of Item": f"${best_value_store['price']/100:,.2f}"
         }
     }
+
 
 @router.get("/{user_id}/fulfill_list/{list_id}", status_code=status.HTTP_200_OK)
 def fulfill_list(user_id: int, list_id: int,
