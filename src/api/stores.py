@@ -51,11 +51,10 @@ def get_stores():
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to fetch stores"
             )
-        
-            
+             
     stores = [    
         {
-        "store_id": str(row.store_id),
+        "store_id": row.store_id,
         "name": row.name,
         "hours": {
             "open": row.open_time.strftime("%I:%M %p"),
@@ -70,39 +69,45 @@ def get_stores():
     ]
     return stores
             
-    
 
 @router.get("/{store_id}/catalog")
 def get_catalog(store_id: int):
     """
     Retrieves the list of items that the store has in its catalog, including item_sku, name, price, and quantity.
     """
-    id_data = {"store_id": store_id}
     fetch_catalog = sqlalchemy.text("""
-        SELECT catalog_item_id as item_sku, name, quantity, price
+        SELECT food_item.food_id, name, quantity, price
         FROM catalog_item
         JOIN catalog ON catalog_item.catalog_id = catalog.catalog_id
-        JOIN food_item fi ON catalog_item.food_id = fi.food_id
+        JOIN food_item ON catalog_item.food_id = food_item.food_id
         WHERE catalog.store_id = :store_id
     """)
 
     with db.engine.begin() as conn:
+        
         try:
-            db_catalog = conn.execute(fetch_catalog, id_data).mappings().all()
-        except Exception as e:
-            logger.exception(f"Error fetching catalog: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to fetch catalog for store"
-            )
+            conn.execute(sqlalchemy.text("""
+                SELECT 1 FROM store 
+                WHERE store_id = :store_id
+                """), {"store_id": store_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="Store does not found :(")
+        
+        catalog = conn.execute(fetch_catalog, {"store_id": store_id})
 
-    if not db_catalog:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Store ID not found in database"
-        )
-
-    return db_catalog
+    return_list = [
+        {
+        "food_id": item.food_id,
+        "item": item.name,
+        "quantity": item.quantity,
+        "price": f"${item.price / 100:.2f}"
+        }
+        for item in catalog
+        
+    ]
+    
+    return return_list
 
 
 @router.post("/compare-prices")
