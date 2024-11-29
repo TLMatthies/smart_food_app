@@ -142,7 +142,7 @@ def generate_food_items():
     food_items = []
     
     # Add common items first
-    for name, size, unit, cal, sat, trans, fiber, carb, sugar, protein in COMMON_ITEMS:
+    for name, size, cal, sat, trans, fiber, carb, sugar, protein in COMMON_ITEMS:
         food_items.append({
             "name": name,
             "serving_size": size,
