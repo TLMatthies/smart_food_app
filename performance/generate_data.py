@@ -58,25 +58,16 @@ FOOD_WORDS = [
 
 def reset_tables(conn):
     print("Resetting database tables...")
+    
+    # Drop and recreate the public schema
     conn.execute(sqlalchemy.text("""
-        DROP TABLE IF EXISTS shopping_list_item CASCADE;
-        DROP TABLE IF EXISTS shopping_list CASCADE;
-        DROP TABLE IF EXISTS catalog_item CASCADE;
-        DROP TABLE IF EXISTS catalog CASCADE;
-        DROP TABLE IF EXISTS store CASCADE;
-        DROP TABLE IF EXISTS food_item CASCADE;
-        DROP TABLE IF EXISTS users CASCADE;
-        
-        ALTER SEQUENCE IF EXISTS catalog_catalog_id_seq RESTART WITH 1;
-        ALTER SEQUENCE IF EXISTS store_store_id_seq RESTART WITH 1;
-        ALTER SEQUENCE IF EXISTS food_item_food_id_seq RESTART WITH 1;
-        ALTER SEQUENCE IF EXISTS catalog_item_catalog_item_id_seq RESTART WITH 1;
-        ALTER SEQUENCE IF EXISTS shopping_list_list_id_seq RESTART WITH 1;
+        DROP SCHEMA public CASCADE;
+        CREATE SCHEMA public;
     """))
     
     with open('init.sql', 'r') as file:
-        sql = file.read()
-        conn.execute(sqlalchemy.text(sql))
+        conn.execute(sqlalchemy.text(file.read()))
+    
     print("Tables reset successfully")
 
 def create_store_hours():

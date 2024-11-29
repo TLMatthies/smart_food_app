@@ -1,8 +1,8 @@
-DROP EXTENSION IF EXISTS cube CASCADE;
-DROP EXTENSION IF EXISTS earthdistance CASCADE;
+-- Enable cube extension
+CREATE EXTENSION IF NOT EXISTS cube;
 
-CREATE EXTENSION IF NOT EXISTS cube CASCADE;
-CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;
+-- Enable earthdistance extension
+CREATE EXTENSION IF NOT EXISTS earthdistance;
 
 -- Users table
 CREATE TABLE public.users (

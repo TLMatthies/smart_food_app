@@ -18,22 +18,38 @@ POSTGRES_PORT=5432
 POSTGRES_URI="postgresql://postgres:postgres@perf_db:5432/perf_db"
 ```
 
-Start containers:
+### Build the datagen Service
+Before starting the containers, build the datagen service. Ensure any changes to generate_data.py or init.sql are included:
+```bash
+docker-compose build --no-cache datagen
+```
+
+### Start containers
+If this is your first time setting up, start the containers:
 ```bash
 docker-compose up -d
 ```
+**Note**: If you have previously started the containers and the database was initialized without the necessary extensions, you need to stop the containers and remove the volumes to re-initialize the database with the extensions:
 
-Generate test data:
+```bash
+docker-compose down -v
+docker-compose up -d
+```
+
+### Generate test data
+Run the data generation script:
 ```bash
 docker-compose exec datagen python generate_data.py
 ```
 
-To run test queries:
+### To run test queries
+Connect to PostgreSQL database to run test queries:
 ```bash
 docker-compose exec perf_db psql -U postgres -d perf_db
 ```
 
-To reset environment:
+### To reset environment
+To reset the environment and remove all data:
 ```bash
 docker-compose down -v
 ```
