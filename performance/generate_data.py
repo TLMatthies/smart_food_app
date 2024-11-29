@@ -29,11 +29,11 @@ STORE_NAMES = [
 ]
 
 COMMON_ITEMS = [
-    ("Milk", "64", "oz", 150, 8, 0, 0, 12, 12, 8),
-    ("Bread", "20", "oz", 250, 1, 0, 2, 45, 3, 8),
-    ("Eggs", "12", "count", 70, 2, 0, 0, 0, 0, 6),
-    ("Banana", "1", "lb", 105, 0, 0, 3, 27, 14, 1),
-    ("Chicken Breast", "1", "lb", 120, 1, 0, 0, 0, 0, 26)
+    ("Milk", 64, 150, 8, 0, 0, 12, 12, 8),
+    ("Bread", 20, 250, 1, 0, 2, 45, 3, 8),
+    ("Eggs", 12, 70, 2, 0, 0, 0, 0, 6),
+    ("Banana", 1, 105, 0, 0, 3, 27, 14, 1),
+    ("Chicken Breast", 1, 120, 1, 0, 0, 0, 0, 26)
 ]
 
 FOOD_CATEGORIES = {
@@ -145,7 +145,7 @@ def generate_food_items():
     for name, size, unit, cal, sat, trans, fiber, carb, sugar, protein in COMMON_ITEMS:
         food_items.append({
             "name": name,
-            "serving_size": f"{size} {unit}",
+            "serving_size": size,
             "calories": cal,
             "saturated_fat": sat,
             "trans_fat": trans,
@@ -164,7 +164,7 @@ def generate_food_items():
             name = f"{np.random.choice(prefixes)} {np.random.choice(FOOD_WORDS)} {category}"
             food_items.append({
                 "name": name,
-                "serving_size": f"{np.random.randint(1, 16)} {np.random.choice(['oz', 'g', 'ml'])}",
+                "serving_size": np.random.randint(1, 16),
                 "calories": np.random.randint(0, 500),
                 "saturated_fat": np.random.randint(0, 20),
                 "trans_fat": np.random.randint(0, 2),
