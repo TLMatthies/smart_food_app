@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
 import sqlalchemy
 from sqlalchemy.exc import IntegrityError
@@ -51,15 +51,16 @@ def get_stores():
         stores = []
         for row in result:
             # Extract the time portion from the datetime strings
-            open_time = int(datetime.strptime(str(row.open_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
-            close_time = int(datetime.strptime(str(row.close_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
+            # print(type(row.open_time), row.close_time, "\n\n\n")
+            # open_time = int(datetime.strptime(str(row.open_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
+            # close_time = int(datetime.strptime(str(row.close_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
             
             stores.append({
                 "store_id": str(row.store_id),
                 "name": row.name,
                 "hours": {
-                    "open": open_time,
-                    "close": close_time
+                    "open": row.open_time.strftime("%I:%M %p"),
+                    "close": row.close_time.strftime("%I:%M %p")
                 },
                 "location": {
                     "latitude": row.latitude,
@@ -109,65 +110,56 @@ def get_catalog(store_id: int):
 
     return db_catalog
 
-class PricesRequest(BaseModel):
-    food_id: int = Field(ge=0)
-    max_price: Optional[int] = Field(default=0, ge=0)
-    max_stores: Optional[int] = Field(default=3, ge=1)
 
 @router.post("/compare-prices")
-def compare_prices(request: PricesRequest):
+def compare_prices(food_id: int, 
+            max_stores: int = Query(3, description="How many stores would you like to see", gt=0)
+                   ):
     """
     Find the stores with the best prices
     """
-
-    query = """
-    SELECT store.store_id AS id, store.name AS name, price
-    FROM store
-    JOIN catalog ON catalog.store_id = store.store_id
-    JOIN catalog_item ON catalog_item.catalog_id = catalog.catalog_id
-    WHERE catalog_item.food_id = :food_id
-    """
-    if request.max_price > 0:
-        query += "AND catalog_item.price <= :max_price"
-
-    query += """
-    ORDER BY price ASC
-    LIMIT :max_stores
-    """
-        
+    find_stores = sqlalchemy.text("""
+        SELECT store.store_id AS id, store.name AS store, food_item.name, price,
+                RANK() OVER (PARTITION BY catalog_item.food_id ORDER BY price) AS rank
+        FROM store
+        JOIN catalog ON catalog.store_id = store.store_id
+        JOIN catalog_item ON catalog_item.catalog_id = catalog.catalog_id
+        JOIN food_item ON food_item.food_id = catalog_item.food_id
+        WHERE catalog_item.food_id = :food_id
+        ORDER BY price ASC
+        LIMIT :max_stores
+    """)
+    
+    
+    print(type(food_id), type(max_stores))
     query_params = [{
-        "food_id": request.food_id,
-        "max_price": request.max_price,
-        "max_stores": request.max_stores
+        "food_id": food_id,
+        "max_stores": max_stores
     }]
 
-    try:
-        with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
-            with conn.begin():
-                result = conn.execute(sqlalchemy.text(query), query_params)
+    with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
+        with conn.begin():
+            try:
+                conn.execute(sqlalchemy.text("""
+                     SELECT 1 FROM food_item
+                     WHERE food_id = :food_id"""
+                     ),{"food_id": food_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Food_id does not exist.")
+                                    
+            stores = conn.execute(find_stores, query_params)
 
-        result = result.fetchall()
 
-        if len(result) <= 0:
-            raise NoResultFound
-
-    except NoResultFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No matching results"
-        )
-    except IntegrityError as e:
-        return e
-
-    return_object = []
-    place = 1
-    for line in result:
-        return_object.append({
-            "store_id": line.id,
-            "store_name": line.name,
-            "price": line.price,
-            "rank": place
-        })
-        place += 1
+    return_object = [
+        {
+            "store_id": store.id,
+            "store_name": store.name,
+            "item": store.store,
+            "price": f"${store.price / 100:.2f}",
+            "rank": store.rank
+        }
+        for store in stores
+    ]
 
     return return_object
