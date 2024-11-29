@@ -360,7 +360,7 @@ def get_list(user_id: int, list_id: int):
                 detail="User is not associated with this list.")
         
         data = conn.execute(sqlalchemy.text("""
-            SELECT food_item.name AS name, shopping_list_item.quantity AS quantity
+            SELECT food_item.food_id AS id, food_item.name AS name, shopping_list_item.quantity AS quantity
             FROM shopping_list_item
             JOIN shopping_list ON shopping_list.list_id = shopping_list_item.list_id
             JOIN food_item ON food_item.food_id = shopping_list_item.food_id
@@ -369,6 +369,7 @@ def get_list(user_id: int, list_id: int):
 
         return [
             {
+                "food_id": row.id, 
                 "name": row.name,
                 "quantity": row.quantity
             }
