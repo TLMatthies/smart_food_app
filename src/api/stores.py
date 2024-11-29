@@ -36,46 +36,40 @@ def get_stores():
     """
     Retrieves all stores with their locations and hours.
     """
-    try:
-        with db.engine.begin() as conn:
-            result = conn.execute(
-                sqlalchemy.text(
-                    """
-                    SELECT store_id, name, latitude, longitude,
-                           open_time, close_time
-                    FROM store
-                    """
-                )
+    with db.engine.begin() as conn:
+        
+        try:
+            result = conn.execute(sqlalchemy.text(
+                """
+                SELECT store_id, name, latitude, longitude,
+                       open_time, close_time
+                FROM store
+                """))
+        except Exception as e:
+            logger.exception(f"Error fetching stores: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch stores"
             )
+        
             
-        stores = []
-        for row in result:
-            # Extract the time portion from the datetime strings
-            # print(type(row.open_time), row.close_time, "\n\n\n")
-            # open_time = int(datetime.strptime(str(row.open_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
-            # close_time = int(datetime.strptime(str(row.close_time), "%Y-%m-%d %H:%M:%S").strftime("%H%M"))
-            
-            stores.append({
-                "store_id": str(row.store_id),
-                "name": row.name,
-                "hours": {
-                    "open": row.open_time.strftime("%I:%M %p"),
-                    "close": row.close_time.strftime("%I:%M %p")
+    stores = [    
+        {
+        "store_id": str(row.store_id),
+        "name": row.name,
+        "hours": {
+            "open": row.open_time.strftime("%I:%M %p"),
+            "close": row.close_time.strftime("%I:%M %p")
                 },
-                "location": {
-                    "latitude": row.latitude,
-                    "longitude": row.longitude
+        "location": {
+            "latitude": row.latitude,
+            "longitude": row.longitude
                 }
-            })
+        }
+        for row in result
+    ]
+    return stores
             
-        return stores
-            
-    except Exception as e:
-        logger.exception(f"Error fetching stores: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch stores"
-        )
     
 
 @router.get("/{store_id}/catalog")
