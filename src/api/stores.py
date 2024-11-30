@@ -98,10 +98,10 @@ def get_catalog(store_id: int):
 
     return_list = [
         {
-        "food_id": item.food_id,
-        "item": item.name,
-        "quantity": item.quantity,
-        "price": f"${item.price / 100:.2f}"
+            "food_id": item.food_id,
+            "item": item.name,
+            "quantity": item.quantity,
+            "price": f"${item.price / 100:.2f}"
         }
         for item in catalog
         
