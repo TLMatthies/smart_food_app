@@ -54,16 +54,16 @@ def get_stores():
              
     stores = [    
         {
-        "store_id": row.store_id,
-        "name": row.name,
-        "hours": {
-            "open": row.open_time.strftime("%I:%M %p"),
-            "close": row.close_time.strftime("%I:%M %p")
-                },
-        "location": {
-            "latitude": row.latitude,
-            "longitude": row.longitude
-                }
+            "store_id": row.store_id,
+            "name": row.name,
+            "hours": {
+                "open": row.open_time.strftime("%I:%M %p"),
+                "close": row.close_time.strftime("%I:%M %p")
+                    },
+            "location": {
+                "latitude": row.latitude,
+                "longitude": row.longitude
+                    }
         }
         for row in result
     ]
