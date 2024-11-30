@@ -209,7 +209,7 @@
    - Overhauled error handling.
 
 8. **(Addressed and Implemented)**  
-   - List comprehension will be used when deemed more appropriate than `for` loops. Will not use for every instance of a for loop as suggested, but will consider and use when it would make code more clear.
+   - List comprehension will be used when deemed more appropriate than `for` loops. Will not use for every instance of a `for` loop as suggested, but will consider and use when it would make code more clear.
 
 9. **(Addressed and Implemented)**  
    - Standardized query code in functions.
