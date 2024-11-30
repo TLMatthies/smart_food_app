@@ -208,8 +208,8 @@
 7. **(Addressed and Implemented)**  
    - Overhauled error handling.
 
-8. **(No Plans For Implementation)**  
-   - Prefer readability of `for` loops over list comprehension.
+8. **(Addressed and Implemented)**  
+   - List comprehension will be used when deemed more appropriate than `for` loops. Will not use for every instance of a for loop as suggested, but will consider and use when it would make code more clear.
 
 9. **(Addressed and Implemented)**  
    - Standardized query code in functions.
