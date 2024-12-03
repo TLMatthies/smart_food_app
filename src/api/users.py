@@ -176,36 +176,37 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
     """
     Add items to specified list, and specified user
     """
-    user_data = {"user_id": user_id}
-    check_user_query = sqlalchemy.text("""
-        SELECT 1 FROM users WHERE user_id = :user_id
-    """)
     item_dicts = [{"list_id": list_id, "user_id": user_id, "food_id": item.food_id, "quantity": item.quantity} for item in items]
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
             try:
-                user_exists = conn.execute(check_user_query, user_data).scalar_one()
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User does not exist"
-                )
-            #Check for valid food ids
-            food_ids = [item.food_id for item in items]
-            existing_food_ids = conn.execute(sqlalchemy.text("""
-                                    SELECT food_id FROM food_item WHERE food_id IN :food_ids"""),
-                {"food_ids": tuple(food_ids)}
-            ).fetchall()
-            existing_food_ids = {row[0] for row in existing_food_ids}
+                conn.execute(sqlalchemy.text("""
+                    SELECT 1 FROM users 
+                    WHERE user_id = :user_id
+                    """), {"user_id": user_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                        detail="User does not exist.")
 
-            # Filter out items with invalid food_id
-            invalid_items = [item for item in items if item.food_id not in existing_food_ids]
-            if invalid_items:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Food ID not recognized"
-                )
-        
+            try:
+                conn.execute(sqlalchemy.text("""
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id
+                    """), {"list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="List does not exist.")
+
+            try:
+                conn.execute(
+                    sqlalchemy.text("""
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id AND user_id = :user_id
+                    """),{"user_id": user_id, "list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User is not associated with this list.")
+            
             try:
                 conn.execute(sqlalchemy.text("""
                     INSERT INTO shopping_list_item (list_id, user_id, food_id, quantity)
@@ -213,7 +214,7 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
                     """
                 ), item_dicts)
                 
-                return "Foods successfully added to list"
+                return "Food(s) successfully added to list"
             
             except IntegrityError as e:
                 logger.exception(f"No duplicate items: {e}")
@@ -228,7 +229,110 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to add to list"
                 )
-    
+
+@router.put("/{user_id}/lists/{list_id}/item", status_code=status.HTTP_204_NO_CONTENT)
+def edit_item_quantity_in_list(
+    list_id: int,
+    user_id: int,
+    items: list[Item]
+):
+    """
+    Edit the quantity of specific items in the specified list for the specified user.
+    """
+    with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
+        with conn.begin():
+            try:
+                conn.execute(sqlalchemy.text(""" 
+                    SELECT 1 FROM users 
+                    WHERE user_id = :user_id
+                """), {"user_id": user_id}).one()
+            except NoResultFound:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist."
+                )
+
+            try:
+                conn.execute(sqlalchemy.text(""" 
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id
+                """), {"list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="List does not exist."
+                )
+
+            try:
+                conn.execute(sqlalchemy.text(""" 
+                    SELECT 1 FROM shopping_list 
+                    WHERE list_id = :list_id AND user_id = :user_id
+                """), {"user_id": user_id, "list_id": list_id}).one()
+            except NoResultFound:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User is not associated with this list."
+                )
+
+            food_ids = [item.food_id for item in items]
+            existing_items = conn.execute(sqlalchemy.text("""
+                SELECT food_id 
+                FROM shopping_list_item 
+                WHERE list_id = :list_id AND user_id = :user_id AND food_id IN :food_ids
+            """), {
+                "list_id": list_id,
+                "user_id": user_id,
+                "food_ids": tuple(food_ids)
+            }).fetchall()
+
+            existing_food_ids = {item[0] for item in existing_items}
+
+            missing_food_ids = [item.food_id for item in items if item.food_id not in existing_food_ids]
+
+            if missing_food_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Food ID(s) {missing_food_ids} not found in the user's list."
+                )
+
+            update_params = {
+                "list_id": list_id,
+                "user_id": user_id,
+                "food_ids": tuple(food_ids)
+            }
+            
+            case_statements = []
+            for item in items:
+                param_food_id = f"food_id_{item.food_id}"
+                param_quantity = f"quantity_{item.food_id}"
+                
+                update_params[param_food_id] = item.food_id
+                update_params[param_quantity] = item.quantity
+                
+                case_statements.append(
+                    f"WHEN :{param_food_id} THEN :{param_quantity}"
+                )
+
+            try:
+                conn.execute(sqlalchemy.text(f"""
+                    UPDATE shopping_list_item
+                    SET quantity = 
+                        CASE food_id 
+                            {' '.join(case_statements)}
+                        END
+                    WHERE list_id = :list_id AND user_id = :user_id AND food_id IN :food_ids
+                """), update_params)
+            except Exception as e:
+                logger.exception(f"Error updating item quantities: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to update item quantities."
+                )
+
+    return "Successfully changed item quantities"
+
+
+
 @router.delete("/{user_id}/lists/{list_id}/item", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item_from_list(user_id: int, list_id: int, food_id: int):
     """
