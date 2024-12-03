@@ -1,14 +1,52 @@
-# Query Performance Analysis
+# Performance Testing Results
+
+## Fake Data Modeling
+The data generation scripts are located in the [`performance`](../performance) directory:
+- [generate_data.py](../performance/generate_data.py)
+- [generate_supabase_data.py](../performance/generate_supabase_data.py)
+
+Our service data is distributed as follows to reach over 1 million total rows:
+
+| Table | Row Count | Justification |
+|-------|-----------|---------------|
+| Users | 100,000 | Represents a reasonable user base for a regional grocery service in a metropolitan area |
+| Stores | 100 | Realistic number of grocery stores in a mid-sized city and surrounding areas |
+| Food Items | 5,000 | Covers typical grocery store inventory across different categories (produce, dairy, meat, etc.) |
+| Catalog Items | 100,000 | Each store carries ~1,000 items (100 stores × 1,000 items), reflecting typical grocery store inventory |
+| Shopping Lists | 200,000 | Average of 2 lists per user (based on Poisson distribution λ=2) |
+| Shopping List Items | 600,000 | Average of 3 items per list (based on Poisson distribution) |
+**Total: 1,005,100 rows**
+
+Distribution reflects realistic usage patterns where:
+- Users manage multiple shopping lists (weekly, monthly, etc.)
+- Each store maintains a substantial product catalog
+- Shopping lists contain multiple items
+- The system has enough data to stress test query performance
+
+## Performance Results of Hitting Endpoints
+Testing was performed with 1 million rows using curl commands. Here are the results:
+
+1. `GET /stores/{store_id}/catalog` - 8.389ms
+2. `GET /users/{user_id}/lists/` - 10.218ms
+3. `GET /shopping/route_optimize` - 11.536ms
+4. `GET /users/{user_id}/lists/{list_id}/facts` - 0.066ms
+5. `GET /stores/compare-prices` - 0.143ms
+6. `GET /shopping/find_snack/{food_id}` - 0.198ms
+
+**Three slowest endpoints:**
+1. `/shopping/route_optimize` (11.536ms)
+2. `GET /users/{user_id}/lists/` (10.218ms)
+3. `GET /stores/{store_id}/catalog` (8.389ms)
+
+## Performance Tuning
 
 ## Introduction
 This details our approach to performance optimization of the The Crusty Cart's database which follows the procedure of measure → tune → measure. We focused on queries that showed significant room for improvement and avoided over-optimization where performance was already adequate.
 
-## Significant Optimizations
-
 ### 1. Store Catalog Query
 **Endpoint**: `/stores/{store_id}/catalog`
 
-### Explain query
+#### Explain query
 ```sql
 EXPLAIN ANALYZE
 SELECT food_item.food_id, name, quantity, price
@@ -74,7 +112,7 @@ Final execution time: 0.972ms
 ### 2. User Shopping Lists Query
 **Endpoint**: `/users/{user_id}/lists`
 
-### Explain query
+#### Explain query
 ```sql
 EXPLAIN ANALYZE
 SELECT list_id, name
@@ -119,7 +157,7 @@ Final execution time: 0.030ms
 ### 3. Route Optimization Query
 **Endpoint**: `/shopping/route_optimize`
 
-### Explain query
+#### Explain query
 ```sql
 EXPLAIN ANALYZE
 WITH they_got_it AS (
