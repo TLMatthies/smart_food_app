@@ -20,7 +20,7 @@ Hungry? Tight on cash? Both? The Crusty Cart has you covered. With our state-of-
 """
 
 app = FastAPI(
-    title="Smart Food App",
+    title="The Crusty Cart",
     description=description,
     version="0.0.1",
     terms_of_service="http://example.com/terms/",
@@ -32,7 +32,7 @@ app = FastAPI(
         "name": "Kevin Rutledge",
         "email": "krutledg@calpoly.edu",
         "name": "McCay Ruddick",
-        "email": "mruddick@calpoly.edu",
+        "email": "fakename@calpoly.edu",
     },
 )
 
@@ -63,4 +63,4 @@ async def validation_exception_handler(request, exc):
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Smart Food App API"}
+    return {"message": "Welcome to the The Crusty Cart API"}
