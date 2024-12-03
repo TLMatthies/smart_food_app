@@ -97,3 +97,7 @@ CREATE TABLE public.shopping_list_item (
     CONSTRAINT shopping_list_item_list_id_fkey FOREIGN KEY (list_id) REFERENCES shopping_list(list_id),
     CONSTRAINT shopping_list_item_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+
+CREATE INDEX idx_catalog_item_catalog ON catalog_item(catalog_id);
+CREATE INDEX idx_shopping_list_user ON shopping_list(user_id);
+CREATE INDEX idx_catalog_item_composite ON catalog_item(food_id, price);
