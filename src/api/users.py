@@ -214,6 +214,13 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
                 ), item_dicts)
                 
                 return "Foods successfully added to list"
+            
+            except IntegrityError as e:
+                logger.exception(f"No duplicate ideas: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Duplicate item in list"
+                )
 
             except Exception as e:
                 logger.exception(f"Error adding to list: {e}")
