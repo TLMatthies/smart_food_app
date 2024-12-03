@@ -1,9 +1,11 @@
-# Smart Food App (Working Title)
+# The Crusty Cart (Working Title)
 
 ## Project Overview
 
-**Smart Food App (Working Title)** aims to enhance shopping efficiency by optimizing costs, nutritional value, and convenience. Our solution helps users maintain a high quantity of food in their cart at affordable prices by strategically selecting shopping locations and managing resources effectively.
-
+**The Crusty Cart**
+	Are you hungry and tight on cash? Look no further! Introducing The Crusty Cart — your ultimate solution for satisfying your cravings without breaking the bank!  
+	With our cutting-edge database technology, finding affordable food has never been easier. Imagine being able to create detailed shopping lists, discover the nutritional value of your favorite meals, and effortlessly locate stores in the Cal Poly area that can cater to all your shopping needs.
+	 But wait, there’s more! Say goodbye to endless scrolling and searching; The Crusty Cart does all the heavy lifting for you! Whether you're a student on a budget or simply looking to eat well, we’ve got your back to find what you need! 
 ## Team Members
 
 - **Timothy Matthies**  
@@ -17,7 +19,7 @@
 
 ## GitHub Repository
 
-[Smart Food App (Working Title)](https://github.com/TLMatthies/csc_365_group_project)
+[The Crusty Cart](https://github.com/TLMatthies/csc_365_group_project)
 
 ## Skills to Utilize
 
@@ -39,4 +41,4 @@
 
 ## Pitch
 
-Facing rising food prices and tight budgets? **Smart Food App** is your solution! We help you keep your shopping costs low while maximizing the quantity and nutritional value of your groceries. By optimizing shopping locations and managing purchases intelligently, we make affordable and nutritious eating accessible, even in challenging economic times.
+Facing rising food prices and tight budgets? **The Crusty Cart** is your solution! We help you keep your shopping costs low while maximizing the quantity and nutritional value of your groceries. By optimizing shopping locations and you can manage your purchases intelligently, we make affordable and nutritious eating accessible, even in challenging economic times.
