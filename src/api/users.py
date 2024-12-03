@@ -171,7 +171,7 @@ class Item(BaseModel):
     food_id: int
     quantity: int = Field(..., ge=1)
 
-@router.post("/{user_id}/lists/{list_id}", status_code=status.HTTP_201_CREATED)
+@router.post("/{user_id}/lists/{list_id}/item", status_code=status.HTTP_201_CREATED)
 def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
     """
     Add items to specified list, and specified user
@@ -216,7 +216,7 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
                 return "Foods successfully added to list"
             
             except IntegrityError as e:
-                logger.exception(f"No duplicate ideas: {e}")
+                logger.exception(f"No duplicate items: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Duplicate item in list"

@@ -153,8 +153,8 @@ def compare_prices(food_id: int,
     return_object = [
         {
             "store_id": store.id,
-            "store_name": store.name,
-            "item": store.store,
+            "store_name": store.store,
+            "item": store.name,
             "price": f"${store.price / 100:.2f}",
             "rank": store.rank
         }
