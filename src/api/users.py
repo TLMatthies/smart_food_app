@@ -222,17 +222,45 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
                     detail="Failed to add to list"
                 )
     
-@router.delete("/{user_id}/lists/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_item_from_list(list_id: int, food_id: int):
+@router.delete("/{user_id}/lists/{list_id}/item", status_code=status.HTTP_204_NO_CONTENT)
+def delete_item_from_list(user_id: int, list_id: int, food_id: int):
     """
     Delete item from specified list, and specified user
     """
-    user_data = {"list_id": list_id, "food_id": food_id}
-    check_query = sqlalchemy.text("""
-        SELECT 1 FROM shopping_list_item WHERE food_id = :food_id AND list_id = :list_id
-    """)
-
     with db.engine.begin() as conn:
+
+        try:
+            conn.execute(sqlalchemy.text("""
+                SELECT 1 FROM users 
+                WHERE user_id = :user_id
+                """), {"user_id": user_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist.")
+
+        try:
+            conn.execute(sqlalchemy.text("""
+                SELECT 1 FROM shopping_list 
+                WHERE list_id = :list_id
+                """), {"list_id": list_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="List does not exist.")
+
+        try:
+            conn.execute(
+                sqlalchemy.text("""
+                SELECT 1 FROM shopping_list 
+                WHERE list_id = :list_id AND user_id = :user_id
+                """),{"user_id": user_id, "list_id": list_id}).one()
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="User is not associated with this list.")
+        user_data = {"list_id": list_id, "food_id": food_id}
+        check_query = sqlalchemy.text("""
+            SELECT 1 FROM shopping_list_item WHERE food_id = :food_id AND list_id = :list_id
+        """)
+
         try:
             check_exists = conn.execute(check_query, user_data).scalar_one()
         except Exception as e:
