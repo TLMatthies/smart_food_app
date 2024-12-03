@@ -16,9 +16,7 @@ logging.basicConfig(
 )
 
 description = """
-TODO: McCay can come up with a better project description
-Smart Food App helps users optimize their grocery shopping by finding the best deals
-and managing their food shopping needs.
+Hungry? Tight on cash? Both? The Crusty Cart has you covered. With our state-of-the-art database technology, we can find you the food you need at a price you can afford. With the Crusty Cart, you can create robust shopping lists, learn their nutritional value, and find the stores in the Calpoly area that will fulfill your shopping needs in the way that's right for you.!
 """
 
 app = FastAPI(
