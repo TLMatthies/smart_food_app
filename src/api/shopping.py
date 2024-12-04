@@ -23,8 +23,9 @@ router = APIRouter(
 def optimize_shopping_route(
     user_id: int,
     food_id: int,
-    budget: int = Query(0, description="Budget in cents, default is 0 (no budget limit)")
+    budget: int = Query(0, ge=0, description="Budget in cents, must be greater than or equal to 0")
 ):
+
     """
     Finds nearby stores with a given food_id.
     If a budget is specified (greater than 0), only stores offering the food item within the budget are considered.
