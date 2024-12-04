@@ -219,11 +219,24 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
                 return "Food(s) successfully added to list"
             
             except IntegrityError as e:
-                logger.exception(f"No duplicate items: {e}")
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Duplicate item in list"
-                )
+                if isinstance(e.orig, psycopg2.errors.UniqueViolation):
+                    logger.exception(f"No duplicate items: {e}")
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Duplicate item in list: {e.orig.pgerror}" 
+                    )
+                elif isinstance(e.orig, psycopg2.errors.ForeignKeyViolation):
+                    logger.exception(f"Foreign key violation: {e}")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"food_id not found: {e.orig.pgerror}" 
+                    )
+                else:
+                    logger.exception(f"Unexpected IntegrityError: {e}")
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Database error"
+                    )
 
             except Exception as e:
                 logger.exception(f"Error adding to list: {e}")
