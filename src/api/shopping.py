@@ -23,13 +23,13 @@ router = APIRouter(
 def optimize_shopping_route(
     user_id: int,
     food_id: int,
-    budget: int = Query(0, description="Budget in cents, default is 0 (no budget limit)")
-):
+    budget: int = Query(0, description="Budget in cents, default is 0 (no budget limit)")):
     """
     Finds nearby stores with a given food_id.
     If a budget is specified (greater than 0), only stores offering the food item within the budget are considered.
     Otherwise, the closest store to the user with the valid food item is selected.
     """
+    
     get_user_info_query = sqlalchemy.text("""
         SELECT longitude, latitude
         FROM users
@@ -38,8 +38,8 @@ def optimize_shopping_route(
 
     find_matching_store_ids_query = sqlalchemy.text(f"""
         SELECT longitude, latitude,
-               store.name as store_name, store.store_id as store_id,
-               catalog_item.price as price
+            store.name as store_name, store.store_id as store_id,
+            catalog_item.price as price
         FROM store
         JOIN catalog ON catalog.store_id = store.store_id
         JOIN catalog_item ON catalog.catalog_id = catalog_item.catalog_id
@@ -52,13 +52,35 @@ def optimize_shopping_route(
 
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
+
+            try:
+                conn.execute(sqlalchemy.text("""
+                    SELECT 1 FROM food_item 
+                    WHERE food_id = :food_id
+                    """), {"food_id": food_id}).one()
+            except NoResultFound:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Food does not exist.")
+
+            try:
+                conn.execute(sqlalchemy.text("""
+                    SELECT DISTINCT 1 FROM food_item
+                    JOIN catalog_item
+                    ON food_item.food_id = catalog_item.food_id
+                    WHERE food_item.food_id = :food_id"""),
+                    [{"food_id": food_id}]).one()
+            except NoResultFound:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No stores carrying this item.")
+            
             try:
                 user_info = conn.execute(get_user_info_query, {"user_id": user_id}).one()
             except NoResultFound as e:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"User does not exist, {e}"
-                )
+                    detail=f"User does not exist, {e}")
 
             result = conn.execute(find_matching_store_ids_query, food_data)
 
@@ -75,7 +97,7 @@ def optimize_shopping_route(
     if not valid_stores:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No stores found with the requested item"
+            detail="No stores found within constraints. Try upping your budget."
         )
 
     # Get closest and best value stores
