@@ -471,7 +471,7 @@ def delete_list(user_id: int, list_id: int):
             DELETE FROM shopping_list WHERE list_id = :list_id;
             """), {"list_id":list_id})
         
-@router.get("{user_id}/list/{list_id}", status_code=status.HTTP_200_OK)
+@router.get("/{user_id}/list/{list_id}", status_code=status.HTTP_200_OK)
 def get_list(user_id: int, list_id: int):
     with db.engine.begin() as conn:
         try:
