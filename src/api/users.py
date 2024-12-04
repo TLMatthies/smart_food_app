@@ -62,7 +62,8 @@ def list_facts(user_id: int, list_id: int):
         SUM((shopping_list_item.quantity) * (dietary_fiber)) AS total_dietary_fiber,
         SUM((shopping_list_item.quantity) * (total_carbohydrate)) AS total_carbohydrates,
         SUM((shopping_list_item.quantity) * (total_sugars)) AS total_sugars,
-        SUM((shopping_list_item.quantity) * (protein)) AS total_protein
+        SUM((shopping_list_item.quantity) * (protein)) AS total_protein,
+        SUM((shopping_list_item.quantity) * (calories)) AS total_calories
     FROM shopping_list
     JOIN shopping_list_item on shopping_list.list_id = shopping_list_item.list_id
     JOIN food_item on shopping_list_item.food_id = food_item.food_id
@@ -129,7 +130,8 @@ def list_facts(user_id: int, list_id: int):
             "total_dietary_fiber": item.total_dietary_fiber,
             "total_carbohydrates": item.total_carbohydrates,
             "total_sugars": item.total_sugars,
-            "total_protein": item.total_protein
+            "total_protein": item.total_protein,
+            "total_calories": item.total_calories
         }
     return nutrition_dict
 
