@@ -182,6 +182,22 @@ def add_item_to_list(list_id: int, user_id: int, items: list[Item]):
     with db.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with conn.begin():
             try:
+                tuple_to_check = tuple(item.food_id for item in items)
+                result = conn.execute(sqlalchemy.text(
+                    """
+                    SELECT 1 FROM food_item
+                    WHERE food_id IN :item_list
+                    """), 
+                    {"item_list": tuple_to_check})
+                if len(list(result)) != len(tuple_to_check):
+                    raise NoResultFound
+            except NoResultFound:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Food_id(s) do not exist"
+                )
+
+            try:
                 conn.execute(sqlalchemy.text("""
                     SELECT 1 FROM users 
                     WHERE user_id = :user_id
