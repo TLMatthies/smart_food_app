@@ -1,4 +1,5 @@
 from typing import Optional
+import psycopg2
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 import sqlalchemy
