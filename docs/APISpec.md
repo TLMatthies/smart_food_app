@@ -1,4 +1,4 @@
-# API Specification for The Crusty Kart
+# API Specification for The Crusty Cart
 
 This API enables users to find stores, compare prices, manage shopping lists, and optimize shopping routes based on location and budget.
 
