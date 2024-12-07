@@ -5,6 +5,7 @@ This API enables users to find stores, compare prices, manage shopping lists, an
 ## 1. Store Info
 
 The API calls are made in this sequence when making a purchase:
+
 1. `Get Stores`
 2. `Get Catalog`
 3. `Compare Prices`
@@ -29,6 +30,7 @@ Retrieves the list of stores. Each store has a store ID, Name, hours, location.
             "longitude": "float"  /* Between -180 and 180 */
         }
     }
+    ...
 ]
 ```
 
@@ -37,6 +39,7 @@ Retrieves the list of stores. Each store has a store ID, Name, hours, location.
 Retrieves the list of items that the store has in its catalog.
 
 **Parameters**:
+
 - `store_id` (path parameter): ID of the store to get catalog from
 
 **Response**:
@@ -49,6 +52,7 @@ Retrieves the list of items that the store has in its catalog.
         "quantity": "integer",
         "price": "string"  /* Format: "$X.XX" */
     }
+    ...
 ]
 ```
 
@@ -57,10 +61,11 @@ Retrieves the list of items that the store has in its catalog.
 Compare prices across stores for a specific item.
 
 **Request**:
+
 ```json
 {
-    "food_id": "integer",
-    "max_stores": "integer"  /* Optional, default: 3 */
+  "food_id": "integer",
+  "max_stores": "integer" /* Optional, default: 3 */
 }
 ```
 
@@ -75,6 +80,7 @@ Compare prices across stores for a specific item.
         "price": "string",  /* Format: "$X.XX" */
         "rank": "integer"   /* Ranking by price, starting from 1 */
     }
+    ...
 ]
 ```
 
@@ -87,12 +93,12 @@ All endpoints may return the following errors:
 - 500 Internal Server Error: Server-side error
 
 Specific errors:
+
 - GET `/stores/{store_id}/catalog`:
   - 404: "Store not found :("
 - POST `/stores/compare-prices`:
   - 404: "Food_id does not exist"
   - 400: "Invalid max_stores parameter"
-
 
 ## 2. User Info
 
@@ -101,19 +107,21 @@ Specific errors:
 Creates a new user with name and optional location information.
 
 **Request**:
+
 ```json
 {
-    "name": "string",         /* Required: Matches regex ^[a-zA-Z0-9_]+$, length 1-27 */
-    "location": "string",     /* Optional: Default "Calpoly SLO" */
-    "latitude": "float",      /* Optional: Default 35.3050, between -90 and 90 */
-    "longitude": "float"      /* Optional: Default -120.6625, between -180 and 180 */
+  "name": "string" /* Required: Matches regex ^[a-zA-Z0-9_]+$, length 1-27 */,
+  "location": "string" /* Optional: Default "Calpoly SLO" */,
+  "latitude": "float" /* Optional: Default 35.3050, between -90 and 90 */,
+  "longitude": "float" /* Optional: Default -120.6625, between -180 and 180 */
 }
 ```
 
 **Response**:
+
 ```json
 {
-    "user_id": "integer"
+  "user_id": "integer"
 }
 ```
 
@@ -122,15 +130,17 @@ Creates a new user with name and optional location information.
 Get all shopping lists for a user.
 
 **Parameters**:
+
 - `user_id` (path parameter): ID of the user
 
 **Response**:
+
 ```json
 [
-    {
-        "list_id": "integer",
-        "name": "string"
-    }
+  {
+    "list_id": "integer",
+    "name": "string"
+  }
 ]
 ```
 
@@ -139,10 +149,12 @@ Get all shopping lists for a user.
 Get nutritional information for all items in a shopping list.
 
 **Parameters**:
+
 - `user_id` (path parameter): ID of the user
 - `list_id` (path parameter): ID of the shopping list
 
 **Response**:
+
 ```json
 {
     "Item Name 1": {
@@ -152,7 +164,8 @@ Get nutritional information for all items in a shopping list.
         "total_dietary_fiber": "integer",
         "total_carbohydrates": "integer",
         "total_sugars": "integer",
-        "total_protein": "integer"
+        "total_protein": "integer",
+        "total_calories": "integer"
     },
     "Item Name 2": {
         "total_servings": "integer",
@@ -161,8 +174,11 @@ Get nutritional information for all items in a shopping list.
         "total_dietary_fiber": "integer",
         "total_carbohydrates": "integer",
         "total_sugars": "integer",
-        "total_protein": "integer"
+        "total_protein": "integer",
+        "total_calories": "integer"
     },
+    ...
+    /* Total: Sum of previous totals */
     "Total": {
         "total_servings": "integer",
         "total_saturated_fat": "integer",
@@ -170,24 +186,29 @@ Get nutritional information for all items in a shopping list.
         "total_dietary_fiber": "integer",
         "total_carbohydrates": "integer",
         "total_sugars": "integer",
-        "total_protein": "integer"
+        "total_protein": "integer",
+        "total_calories": "integer"
     }
 }
 ```
+
+- 204 No Content: "List is empty, add something to it!"
 
 ### 2.4. Create shopping list - `/users/{user_id}/lists` (POST)
 
 Create a new shopping list for a user.
 
 **Parameters**:
+
 - `user_id` (path parameter): ID of the user
 - `name` (query parameter): Name of the shopping list
 
 **Response**:
+
 ```json
 {
-    "name": "string",
-    "list_id": "integer"
+  "name": "string",
+  "list_id": "integer"
 }
 ```
 
@@ -196,16 +217,18 @@ Create a new shopping list for a user.
 Add one or more items to a shopping list.
 
 **Parameters**:
+
 - `user_id` (path parameter): ID of the user
 - `list_id` (path parameter): ID of the shopping list
 
 **Request**:
+
 ```json
 [
-    {
-        "food_id": "integer",
-        "quantity": "integer" /* Must be greater than 0 */
-    }
+  {
+    "food_id": "integer",
+    "quantity": "integer" /* Must be greater than 0 */
+  }
 ]
 ```
 
@@ -216,6 +239,7 @@ Add one or more items to a shopping list.
 Remove a specific item from a shopping list.
 
 **Parameters**:
+
 - `user_id` (path parameter): ID of the user
 - `list_id` (path parameter): ID of the shopping list
 - `food_id` (query parameter): ID of the food item to remove
@@ -227,6 +251,7 @@ Remove a specific item from a shopping list.
 Delete an entire shopping list and all its items.
 
 **Parameters**:
+
 - `user_id` (path parameter): ID of the user
 - `list_id` (path parameter): ID of the shopping list
 
@@ -237,35 +262,59 @@ Delete an entire shopping list and all its items.
 Get all items in a specific shopping list.
 
 **Parameters**:
+
 - `user_id` (path parameter): ID of the user
 - `list_id` (path parameter): ID of the shopping list
 
 **Response**:
+
 ```json
 [
-    {
-        "food_id": "integer",
-        "name": "string",
-        "quantity": "integer"
-    }
+  {
+    "food_id": "integer",
+    "name": "string",
+    "quantity": "integer"
+  },
+  ...
 ]
 ```
+
+### 2.9. Edit Item Quantity in List - `/users/{user_id}/lists/{list_id}/item` (PUT)
+
+Edits the quantity of one or more existing items within a specified shopping list.
+
+**Parameters**:
+
+- `user_id` (path parameter): ID of the user
+- `list_id` (path parameter): ID of the shopping list
+
+**Request**:
+
+```json
+[
+  {
+    "food_id": "integer",
+    "quantity": "integer" /* Must be greater than 0 */
+  }
+  ...
+]
+```
+
+**Response**: Status 204 No Content
 
 ### Error Responses
 
 All endpoints may return these errors:
+
 - 401 Unauthorized: Invalid or missing access token
 - 404 Not Found: Various cases including:
   - "User does not exist"
   - "List does not exist"
   - "User is not associated with this list"
   - "Food ID not recognized"
+  - "Food ID(s) not found in the user's list"
 - 409 Conflict: "Duplicate item in list" (for adding items)
 - 500 Internal Server Error: Various server-side errors
-
-For nutritional facts endpoint:
-- 204 No Content: "List is empty, add something to it!"
-
 
 ## 3. Shopping Route
 
@@ -274,25 +323,27 @@ For nutritional facts endpoint:
 Finds nearby stores with a given food item, taking into account optional budget constraints.
 
 **Parameters**:
+
 - `user_id`: ID of the user
 - `food_id`: ID of the food item to find
 - `budget`: Optional budget in cents, default is 0 (no budget limit)
 
 **Response**:
+
 ```json
 {
-    "Closest Store": {
-        "Name": "string",
-        "Store ID": "integer",
-        "Distance Away": "string", /* Format: "X.XX km" */
-        "Price of Item": "string"  /* Format: "$X.XX" */
-    },
-    "Best Value Store": {
-        "Name": "string",
-        "Store ID": "integer",
-        "Distance Away": "string", /* Format: "X.XX km" */
-        "Price of Item": "string"  /* Format: "$X.XX" */
-    }
+  "Closest Store": {
+    "Name": "string",
+    "Store ID": "integer",
+    "Distance Away": "string" /* Format: "X.XX km" */,
+    "Price of Item": "string" /* Format: "$X.XX" */
+  },
+  "Best Value Store": {
+    "Name": "string",
+    "Store ID": "integer",
+    "Distance Away": "string" /* Format: "X.XX km" */,
+    "Price of Item": "string" /* Format: "$X.XX" */
+  }
 }
 ```
 
@@ -301,22 +352,24 @@ Finds nearby stores with a given food item, taking into account optional budget 
 Generate a list of closest stores to fulfill a shopping list.
 
 **Parameters**:
+
 - `user_id`: ID of the user
 - `list_id`: ID of the shopping list
-- `budget`: Maximum willing to spend per item in cents (default: maximum integer)
-- `max_dist`: Maximum range in km (default: 10)
-- `order_by`: Sorting option (1=price,distance; 2=price; 3=distance) (default: 1)
+- `budget`: Optional maximum willing to spend per item in cents (default: maximum integer)
+- `max_dist`: Optional maximum range in km (default: 10)
+- `order_by`: Optional sorting option (1=price,distance; 2=price; 3=distance) (default: 1)
 
 **Response**:
+
 ```json
 [
-    {
-        "Name": "string",
-        "Store ID": "integer",
-        "Distance Away": "string", /* Format: "X.XX km" */
-        "Item": "string",
-        "Price of Item": "string"  /* Format: "$X.XX" */
-    }
+  {
+    "Name": "string",
+    "Store ID": "integer",
+    "Distance Away": "string" /* Format: "X.XX km" */,
+    "Item": "string",
+    "Price of Item": "string" /* Format: "$X.XX" */
+  }
 ]
 ```
 
@@ -325,25 +378,28 @@ Generate a list of closest stores to fulfill a shopping list.
 Find the closest store that has a specific food item.
 
 **Parameters**:
+
 - `user_id`: ID of the user
 - `food_id`: ID of the food item
-- `max_dist`: Maximum range in km (default: 10)
-- `order_by`: Sorting option (1=price,distance; 2=price; 3=distance) (default: 3)
+- `max_dist`: Optional maximum range in km (default: 10)
+- `order_by`: Optional sorting option (1=price,distance; 2=price; 3=distance) (default: 3)
 
 **Response**:
+
 ```json
 {
-    "Name": "string",
-    "Store ID": "integer",
-    "Distance Away": "string", /* Format: "X.XX km" */
-    "Item": "string",
-    "Price of Item": "string"  /* Format: "$X.XX" */
+  "Name": "string",
+  "Store ID": "integer",
+  "Distance Away": "string" /* Format: "X.XX km" */,
+  "Item": "string",
+  "Price of Item": "string" /* Format: "$X.XX" */
 }
 ```
 
 ### Error Responses
 
 All endpoints may return:
+
 - 401 Unauthorized: Invalid or missing access token
 - 404 Not Found:
   - "User does not exist"
