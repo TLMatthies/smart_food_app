@@ -192,6 +192,8 @@ Get nutritional information for all items in a shopping list.
 }
 ```
 
+Or
+
 - 204 No Content: "List is empty, add something to it!"
 
 ### 2.4. Create shopping list - `/users/{user_id}/lists` (POST)
