@@ -1,4 +1,4 @@
-# The Crusty Cart (Working Title)
+# The Crusty Cart
 
 ## Project Overview
 
